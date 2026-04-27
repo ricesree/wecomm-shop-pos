@@ -1,6 +1,6 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/vegdetect/vegdetect-api', '.']
+    args: ['build', '-t', 'gcr.io/vegdetect/vegdetect-api', './api']
 
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/vegdetect/vegdetect-api']
