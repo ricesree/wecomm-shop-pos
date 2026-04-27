@@ -217,12 +217,23 @@ def main():
             if img is None or not labels:
                 continue
 
+            # skip if all augmented copies already exist
+            all_exist = all(
+                os.path.exists(os.path.join(img_dir, f"aug_{i}_{stem}{img_ext}"))
+                for i in range(n_copies)
+            )
+            if all_exist:
+                continue
+
             for i in range(n_copies):
+                out_name = f"aug_{i}_{stem}"
+                if os.path.exists(os.path.join(img_dir, out_name + img_ext)):
+                    continue   # this copy already done
+
                 aug_img, aug_labels = apply_pipeline(img.copy(), labels, i)
                 if aug_img is None or not aug_labels:
                     continue
 
-                out_name = f"aug_{i}_{stem}"
                 cv2.imwrite(os.path.join(img_dir, out_name + img_ext), aug_img)
                 write_labels(os.path.join(lbl_dir, out_name + ".txt"), aug_labels)
                 cls_new += 1

@@ -22,7 +22,7 @@ LABELS_DIR   = r"c:\Users\sreet\Desktop\TUNE-DATAPOS\MANUAL_LABELS"
 DOWNLOAD_DIR = r"c:\Users\sreet\Desktop\TUNE-DATAPOS\CORRECTIONS_DOWNLOAD"
 
 def main():
-    client = storage.Client()
+    client = storage.Client(project="vegdetect")
     bucket = client.bucket(BUCKET_NAME)
     blobs  = list(bucket.list_blobs())
 
