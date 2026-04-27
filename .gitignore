@@ -1,0 +1,27 @@
+# Large data folders — store on Google Drive / GCS instead
+DATASET/
+MANUAL_LABELS/
+DETECTIONS/
+RESULTS/
+YOLO_MANUAL/
+CORRECTIONS_DOWNLOAD/
+SAMPLES/
+
+# Model weights — too large for GitHub (198MB), store on Drive / GCS
+MODEL_MANUAL/
+api/best.pt
+yolov8n.pt
+*.pt
+
+# Zip files
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# Claude memory
+.claude/
