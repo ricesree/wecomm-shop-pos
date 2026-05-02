@@ -21,12 +21,17 @@ def root(): return FileResponse("/app/static/index.html")
 
 MODEL_PATH      = os.environ.get("MODEL_PATH",       "/app/best.pt")
 CONF            = float(os.environ.get("CONF_THRESHOLD", "0.25"))
-IMGSZ           = int(os.environ.get("IMGSZ",            "640"))
+IMGSZ           = int(os.environ.get("IMGSZ",            "320"))
 FEEDBACK_BUCKET = os.environ.get("FEEDBACK_BUCKET",  "")
 
 print(f"Loading model from {MODEL_PATH} ...")
 model = YOLO(MODEL_PATH)
 print(f"Model ready — classes: {list(model.names.values())}")
+
+# Warm-up: run one dummy inference so first real request is instant
+_dummy = np.zeros((480, 640, 3), dtype=np.uint8)
+model(_dummy, conf=CONF, verbose=False, imgsz=IMGSZ)
+print("Model warmed up.")
 
 _gcs_client = None
 def get_gcs():
