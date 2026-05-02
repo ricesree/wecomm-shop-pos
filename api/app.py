@@ -20,8 +20,8 @@ app.mount("/static", StaticFiles(directory="/app/static"), name="static")
 def root(): return FileResponse("/app/static/index.html")
 
 MODEL_PATH      = os.environ.get("MODEL_PATH",       "/app/best.pt")
-CONF            = float(os.environ.get("CONF_THRESHOLD", "0.30"))
-IMGSZ           = int(os.environ.get("IMGSZ",            "320"))
+CONF            = float(os.environ.get("CONF_THRESHOLD", "0.25"))
+IMGSZ           = int(os.environ.get("IMGSZ",            "640"))
 FEEDBACK_BUCKET = os.environ.get("FEEDBACK_BUCKET",  "")
 
 print(f"Loading model from {MODEL_PATH} ...")
