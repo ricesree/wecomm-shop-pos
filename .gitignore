@@ -1,20 +1,35 @@
-# Large data folders — store on Google Drive / GCS instead
+# Large data folders — keep on Google Drive / GCS
 DATASET/
 MANUAL_LABELS/
+YOLO_CATEGORIES/
+YOLO_MANUAL/
+TOMATO_ONLY/
+MODEL_MANUAL/
 DETECTIONS/
 RESULTS/
-YOLO_MANUAL/
 CORRECTIONS_DOWNLOAD/
 SAMPLES/
 
-# Model weights — too large for GitHub (198MB), store on Drive / GCS
-MODEL_MANUAL/
-api/best.pt
-yolov8n.pt
+# Model weights — keep on GCS (gs://vegdetect-feedback-1076778092661/models/)
 *.pt
+*.pth
+api/best.pt
+best_categories.pt
 
 # Zip files
 *.zip
+
+# Old one-off scripts (not needed in repo)
+detect.py
+label.py
+retrain.py
+balance_dataset.py
+colab_train_new.py
+download_images.py
+make_ginger_zip.py
+make_tomato_zip.py
+mask_all.py
+mask_manual.py
 
 # Python
 __pycache__/

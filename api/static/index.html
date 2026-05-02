@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Swadesh Food Mart — POS</title>
 <style>
-/* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --green: #00c853; --green2: #00897b;
@@ -19,11 +18,8 @@ body {
   height: 100dvh; overflow: hidden;
   display: flex; flex-direction: column;
 }
-
-/* ── Header ── */
 header {
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  background: var(--panel); border-bottom: 1px solid var(--border);
   padding: 10px 16px;
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0; gap: 12px; z-index: 20;
@@ -47,52 +43,43 @@ header {
 #liveDot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
 
-/* ── Main layout: camera left, POS right ── */
 main {
   flex: 1; display: grid; min-height: 0;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: 1fr 380px;
 }
 @media (max-width: 767px) {
   main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
 }
 
-/* ── Camera side ── */
-#camSide {
-  position: relative; background: #000; overflow: hidden;
-  display: flex; flex-direction: column;
-}
+/* Camera side */
+#camSide { position: relative; background: #000; overflow: hidden; display: flex; flex-direction: column; }
 #video   { width: 100%; height: 100%; object-fit: cover; display: block; flex: 1; }
 #overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
-/* detection result strip at bottom of cam */
 #camBottom {
   position: absolute; bottom: 0; left: 0; right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,.85), transparent);
-  padding: 60px 16px 16px;
+  background: linear-gradient(to top, rgba(0,0,0,.88), transparent);
+  padding: 60px 14px 14px;
   display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
 }
-/* top-4 cards inside camera */
-#camCards {
-  display: flex; gap: 8px; flex: 1;
-  overflow-x: auto; scrollbar-width: none;
-}
+#camCards { display: flex; gap: 8px; flex: 1; overflow-x: auto; scrollbar-width: none; }
 #camCards::-webkit-scrollbar { display: none; }
 .cam-card {
-  flex-shrink: 0; min-width: 68px;
+  flex-shrink: 0; min-width: 76px;
   background: rgba(255,255,255,.08); backdrop-filter: blur(8px);
   border: 2px solid rgba(255,255,255,.15);
-  border-radius: 12px; padding: 8px 7px;
+  border-radius: 12px; padding: 9px 8px;
   cursor: pointer; text-align: center;
   transition: border-color .15s, background .15s, transform .1s;
   -webkit-tap-highlight-color: transparent;
 }
 .cam-card.active { border-color: var(--col); background: color-mix(in srgb, var(--col) 25%, transparent); }
 .cam-card:active  { transform: scale(.93); }
-.cam-card .cc-name { font-size: 10px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cam-card .cc-conf { font-size: 12px; font-weight: 800; color: var(--col); margin-top: 2px; }
+.cam-card .cc-cat  { font-size: 9px; font-weight: 600; color: var(--col); text-transform: uppercase; letter-spacing: .5px; }
+.cam-card .cc-name { font-size: 11px; font-weight: 800; color: #fff; margin-top: 2px; }
+.cam-card .cc-conf { font-size: 13px; font-weight: 800; color: var(--col); margin-top: 1px; }
 .cam-card.empty    { pointer-events: none; opacity: .3; }
 
-/* Capture button */
 #captureBtn {
   width: 62px; height: 62px; flex-shrink: 0;
   border-radius: 50%; background: #fff;
@@ -100,142 +87,125 @@ main {
   box-shadow: 0 0 0 3px #000, 0 0 0 5px #fff;
   cursor: pointer; font-size: 24px;
   display: flex; align-items: center; justify-content: center;
-  transition: transform .1s;
-  -webkit-tap-highlight-color: transparent;
+  transition: transform .1s; -webkit-tap-highlight-color: transparent;
 }
 #captureBtn:active { transform: scale(.88); }
 #captureBtn.flash  { background: var(--green); }
-
-/* fps */
 #fpsTag {
   position: absolute; top: 12px; right: 12px;
   background: rgba(0,0,0,.5); color: #aaa;
   font-size: 11px; padding: 3px 8px; border-radius: 10px;
 }
 
-/* ── POS side ── */
+/* POS side */
 #posSide {
-  background: var(--panel);
-  border-left: 1px solid var(--border);
-  display: flex; flex-direction: column;
-  overflow: hidden;
+  background: var(--panel); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
 }
 
-/* Add strip — detected item confirm */
+/* Add strip */
 #addStrip {
-  padding: 12px 14px;
+  padding: 12px 14px 10px;
   border-bottom: 1px solid var(--border);
-  display: flex; flex-direction: column; gap: 8px;
   flex-shrink: 0;
 }
-#addStrip .strip-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-#addRow { display: flex; gap: 8px; }
-#addMainBtn {
-  flex: 1; padding: 13px; border-radius: 12px;
-  border: none; background: var(--green);
-  color: #fff; font-size: 15px; font-weight: 800;
-  cursor: pointer; transition: opacity .15s;
+.strip-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+
+/* Category badge */
+#catBadge {
+  display: none;
+  align-items: center; justify-content: space-between;
+  background: var(--card); border-radius: 10px; padding: 8px 12px;
+  margin-bottom: 8px; border: 1px solid var(--border);
+}
+#catBadgeName { font-size: 16px; font-weight: 800; letter-spacing: .5px; }
+#catBadgeConf { font-size: 12px; color: var(--muted); }
+#catBadgeWrong {
+  font-size: 11px; color: var(--amber); background: none;
+  border: 1px solid var(--amber); border-radius: 6px;
+  padding: 4px 8px; cursor: pointer; font-weight: 700;
+}
+#catBadgeWrong:disabled { opacity: .3; cursor: default; border-color: var(--border); color: var(--muted); }
+
+/* Product grid */
+#productGrid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6px; margin-bottom: 8px;
+}
+.prod-btn {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 9px 10px;
+  cursor: pointer; text-align: left;
+  transition: border-color .12s, background .12s, transform .08s;
   -webkit-tap-highlight-color: transparent;
 }
-#addMainBtn:disabled { background: var(--border); color: var(--muted); cursor: default; }
-#addMainBtn:not(:disabled):active { opacity: .8; }
+.prod-btn:active { transform: scale(.96); }
+.prod-btn.single { grid-column: 1 / -1; }
+.prod-btn-name  { font-size: 12px; font-weight: 700; color: #fff; line-height: 1.3; }
+.prod-btn-price { font-size: 12px; font-weight: 800; margin-top: 3px; }
+
+#waitMsg {
+  text-align: center; padding: 16px 8px;
+  color: var(--muted); font-size: 13px;
+}
 
 /* Manual search */
 #searchWrap { position: relative; }
 #searchInput {
-  width: 100%; padding: 11px 14px 11px 36px;
+  width: 100%; padding: 10px 14px 10px 34px;
   background: var(--card); border: 1px solid var(--border);
   border-radius: 10px; color: #fff; font-size: 14px; outline: none;
   transition: border-color .15s;
 }
 #searchInput:focus { border-color: var(--green); }
-#searchIcon {
-  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
-  font-size: 15px; pointer-events: none;
-}
+#searchIcon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
 #searchResults {
-  display: none;
-  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
   background: var(--card); border: 1px solid var(--border);
   border-radius: 10px; max-height: 200px; overflow-y: auto;
   z-index: 50; box-shadow: 0 8px 24px rgba(0,0,0,.5);
 }
-.sr-item {
-  padding: 11px 14px; font-size: 14px; cursor: pointer;
-  border-bottom: 1px solid var(--border);
-  transition: background .1s;
-}
+.sr-item { padding: 11px 14px; font-size: 14px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
 .sr-item:last-child { border-bottom: none; }
 .sr-item:hover, .sr-item:active { background: var(--border); }
 .sr-highlight { color: var(--green); font-weight: 700; }
 
 /* Cart */
 #cartSection { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-#cartHeader {
-  padding: 10px 14px 8px;
-  display: flex; align-items: center; justify-content: space-between;
-  flex-shrink: 0;
-}
+#cartHeader { padding: 10px 14px 8px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 #cartHeader h2 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-#clearBtn {
-  font-size: 11px; color: var(--red); background: none;
-  border: none; cursor: pointer; font-weight: 600;
-}
+#clearBtn { font-size: 11px; color: var(--red); background: none; border: none; cursor: pointer; font-weight: 600; }
 #cartList { flex: 1; overflow-y: auto; padding: 0 14px; }
 #cartList::-webkit-scrollbar { width: 3px; }
 #cartList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-.cart-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 0; border-bottom: 1px solid var(--border);
-}
+.cart-item { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--border); }
 .cart-item:last-child { border-bottom: none; }
 .ci-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .ci-name { flex: 1; font-size: 13px; font-weight: 600; }
 .ci-price { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .qty-row  { display: flex; align-items: center; gap: 6px; }
-.qty-btn  {
-  width: 26px; height: 26px; border-radius: 6px;
-  background: var(--border); border: none; color: #fff;
-  font-size: 16px; cursor: pointer; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  -webkit-tap-highlight-color: transparent;
-}
-.qty-num { font-size: 14px; font-weight: 700; min-width: 20px; text-align: center; }
+.qty-btn  { width: 26px; height: 26px; border-radius: 6px; background: var(--border); border: none; color: #fff; font-size: 16px; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+.qty-num  { font-size: 14px; font-weight: 700; min-width: 20px; text-align: center; }
 .ci-total { font-size: 13px; font-weight: 700; text-align: right; min-width: 48px; }
 .ci-del   { font-size: 16px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 2px 4px; }
-
-#emptyCart {
-  text-align: center; padding: 40px 20px;
-  color: var(--muted); font-size: 13px; line-height: 1.8;
-}
+#emptyCart { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; line-height: 1.8; }
 #emptyCart .ec-icon { font-size: 40px; margin-bottom: 8px; }
 
-/* Totals + checkout */
-#cartFooter {
-  padding: 12px 14px;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.total-row {
-  display: flex; justify-content: space-between;
-  font-size: 13px; color: var(--muted); margin-bottom: 5px;
-}
-.total-row.grand {
-  font-size: 18px; font-weight: 800; color: #fff; margin-top: 8px; margin-bottom: 14px;
-}
+/* Cart footer */
+#cartFooter { padding: 12px 14px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.total-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+.total-row.grand { font-size: 18px; font-weight: 800; color: #fff; margin-top: 8px; margin-bottom: 14px; }
 #checkoutBtn {
-  width: 100%; padding: 15px; border-radius: 12px;
-  border: none; background: linear-gradient(135deg, var(--green), var(--green2));
-  color: #fff; font-size: 16px; font-weight: 800;
-  cursor: pointer; box-shadow: 0 4px 16px rgba(0,200,83,.3);
-  transition: opacity .15s;
+  width: 100%; padding: 15px; border-radius: 12px; border: none;
+  background: linear-gradient(135deg, var(--green), var(--green2));
+  color: #fff; font-size: 16px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,200,83,.3); transition: opacity .15s;
   -webkit-tap-highlight-color: transparent;
 }
-#checkoutBtn:active { opacity: .85; }
+#checkoutBtn:active   { opacity: .85; }
 #checkoutBtn:disabled { background: var(--border); color: var(--muted); cursor: default; box-shadow: none; }
 
-/* ── Start screen ── */
+/* Start screen */
 #startScreen {
   position: fixed; inset: 0; background: var(--bg);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -244,34 +214,20 @@ main {
 .start-icon { font-size: 64px; }
 #startScreen h2 { font-size: 22px; font-weight: 800; color: var(--green); }
 #startScreen p  { color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 300px; }
-#startBtn {
-  background: linear-gradient(135deg, var(--green), var(--green2));
-  border: none; border-radius: 14px; padding: 15px 44px;
-  font-size: 16px; font-weight: 700; color: #fff;
-  cursor: pointer; box-shadow: 0 4px 20px rgba(0,200,83,.4);
-}
+#startBtn { background: linear-gradient(135deg, var(--green), var(--green2)); border: none; border-radius: 14px; padding: 15px 44px; font-size: 16px; font-weight: 700; color: #fff; cursor: pointer; box-shadow: 0 4px 20px rgba(0,200,83,.4); }
 #errMsg { color: #ff8a80; font-size: 14px; margin-top: 8px; max-width: 300px; }
 
-/* ── Bill modal ── */
-#billModal {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.75); z-index: 200;
-  align-items: center; justify-content: center; padding: 16px;
-}
-#billBox {
-  background: #fff; color: #000; border-radius: 16px;
-  width: 100%; max-width: 400px; max-height: 90dvh;
-  overflow-y: auto; padding: 0;
-  box-shadow: 0 20px 60px rgba(0,0,0,.5);
-}
+/* Bill modal */
+#billModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+#billBox { background: #fff; color: #000; border-radius: 16px; width: 100%; max-width: 400px; max-height: 90dvh; overflow-y: auto; padding: 0; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
 #billContent { padding: 24px; }
 .bill-header { text-align: center; margin-bottom: 16px; }
-.bill-store   { font-size: 20px; font-weight: 900; color: #000; letter-spacing: .5px; }
-.bill-sub     { font-size: 11px; color: #666; margin-top: 2px; }
-.bill-divider { border: none; border-top: 1px dashed #ccc; margin: 12px 0; }
-.bill-meta    { font-size: 11px; color: #666; display: flex; justify-content: space-between; margin-bottom: 12px; }
-.bill-cols    { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #666; padding-bottom: 6px; border-bottom: 1px solid #ddd; margin-bottom: 6px; }
-.bill-row     { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 4px 0; }
+.bill-store  { font-size: 20px; font-weight: 900; color: #000; letter-spacing: .5px; }
+.bill-sub    { font-size: 11px; color: #666; margin-top: 2px; }
+.bill-divider{ border: none; border-top: 1px dashed #ccc; margin: 12px 0; }
+.bill-meta   { font-size: 11px; color: #666; display: flex; justify-content: space-between; margin-bottom: 12px; }
+.bill-cols   { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #666; padding-bottom: 6px; border-bottom: 1px solid #ddd; margin-bottom: 6px; }
+.bill-row    { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 4px 0; }
 .bill-row .item-name { flex: 1; }
 .bill-row .item-qty  { width: 40px; text-align: center; color: #555; }
 .bill-row .item-amt  { width: 60px; text-align: right; font-weight: 600; }
@@ -279,95 +235,32 @@ main {
 .bill-total-row { display: flex; justify-content: space-between; font-size: 13px; color: #444; padding: 2px 0; }
 .bill-total-row.grand { font-size: 18px; font-weight: 900; color: #000; margin-top: 6px; }
 .bill-footer { text-align: center; margin-top: 16px; font-size: 11px; color: #888; }
-#billActions {
-  display: flex; gap: 10px; padding: 12px 24px 20px;
-  border-top: 1px solid #eee;
-}
-#printBtn {
-  flex: 1; padding: 12px; border-radius: 10px;
-  background: #000; color: #fff; border: none;
-  font-size: 14px; font-weight: 700; cursor: pointer;
-}
-#closeBillBtn {
-  flex: 1; padding: 12px; border-radius: 10px;
-  background: #f3f4f6; color: #333; border: none;
-  font-size: 14px; font-weight: 600; cursor: pointer;
-}
-#newOrderBtn {
-  flex: 1; padding: 12px; border-radius: 10px;
-  background: #00c853; color: #fff; border: none;
-  font-size: 14px; font-weight: 700; cursor: pointer;
-}
+#billActions { display: flex; gap: 10px; padding: 12px 24px 20px; border-top: 1px solid #eee; }
+#printBtn    { flex: 1; padding: 12px; border-radius: 10px; background: #000; color: #fff; border: none; font-size: 14px; font-weight: 700; cursor: pointer; }
+#closeBillBtn{ flex: 1; padding: 12px; border-radius: 10px; background: #f3f4f6; color: #333; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+#newOrderBtn { flex: 1; padding: 12px; border-radius: 10px; background: #00c853; color: #fff; border: none; font-size: 14px; font-weight: 700; cursor: pointer; }
 
-/* ── Learn / Feedback modal ── */
-#learnModal {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.8); z-index: 300;
-  align-items: flex-end; justify-content: center; padding: 0;
-}
-#learnBox {
-  background: var(--panel); border-radius: 20px 20px 0 0;
-  width: 100%; max-width: 520px;
-  padding: 20px 20px 32px;
-  border-top: 1px solid var(--border);
-  animation: slideUp .25s ease;
-}
+/* Learn modal */
+#learnModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 300; align-items: flex-end; justify-content: center; padding: 0; }
+#learnBox { background: var(--panel); border-radius: 20px 20px 0 0; width: 100%; max-width: 520px; padding: 20px 20px 32px; border-top: 1px solid var(--border); animation: slideUp .25s ease; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 #learnBox h3 { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
 #learnBox .lm-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
-#learnPreview {
-  width: 100%; height: 140px; object-fit: cover;
-  border-radius: 10px; margin-bottom: 14px;
-  background: #000; display: block;
-}
+#learnPreview { width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-bottom: 14px; background: #000; display: block; }
 #learnSearchWrap { position: relative; margin-bottom: 10px; }
-#learnInput {
-  width: 100%; padding: 12px 14px;
-  background: var(--card); border: 1.5px solid var(--border);
-  border-radius: 10px; color: #fff; font-size: 15px; outline: none;
-  transition: border-color .15s;
-}
+#learnInput { width: 100%; padding: 12px 14px; background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; color: #fff; font-size: 15px; outline: none; transition: border-color .15s; }
 #learnInput:focus { border-color: var(--amber); }
-#learnSuggestions {
-  display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 10px; max-height: 180px; overflow-y: auto;
-  z-index: 50; box-shadow: 0 8px 24px rgba(0,0,0,.5);
-}
-.ls-item {
-  padding: 11px 14px; font-size: 14px; cursor: pointer;
-  border-bottom: 1px solid var(--border);
-}
+#learnSuggestions { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--card); border: 1px solid var(--border); border-radius: 10px; max-height: 180px; overflow-y: auto; z-index: 50; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.ls-item { padding: 11px 14px; font-size: 14px; cursor: pointer; border-bottom: 1px solid var(--border); }
 .ls-item:last-child { border-bottom: none; }
 .ls-item:hover { background: var(--border); }
 .ls-new { color: var(--amber); font-weight: 700; }
 #learnBtnRow { display: flex; gap: 10px; margin-top: 4px; }
-#learnSaveBtn {
-  flex: 1; padding: 13px; border-radius: 12px; border: none;
-  background: var(--amber); color: #000;
-  font-size: 15px; font-weight: 800; cursor: pointer;
-}
+#learnSaveBtn { flex: 1; padding: 13px; border-radius: 12px; border: none; background: var(--amber); color: #000; font-size: 15px; font-weight: 800; cursor: pointer; }
 #learnSaveBtn:active { opacity: .85; }
-#learnCancelBtn {
-  padding: 13px 20px; border-radius: 12px; border: none;
-  background: var(--border); color: var(--muted);
-  font-size: 14px; font-weight: 600; cursor: pointer;
-}
-#learnStatus {
-  margin-top: 10px; font-size: 13px; text-align: center;
-  color: var(--green); font-weight: 600; display: none;
-}
+#learnCancelBtn { padding: 13px 20px; border-radius: 12px; border: none; background: var(--border); color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; }
+#learnStatus { margin-top: 10px; font-size: 13px; text-align: center; color: var(--green); font-weight: 600; display: none; }
 
-/* Wrong button in add strip */
-#wrongBtn {
-  padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--amber);
-  background: transparent; color: var(--amber);
-  font-size: 13px; font-weight: 700; cursor: pointer;
-  white-space: nowrap; flex-shrink: 0;
-}
-#wrongBtn:disabled { opacity: .3; cursor: default; border-color: var(--border); color: var(--muted); }
-
-/* Print styles */
 @media print {
   body > *:not(#billModal) { display: none !important; }
   #billModal { display: block !important; position: static; background: none; padding: 0; }
@@ -378,7 +271,7 @@ main {
 </head>
 <body>
 
-<!-- ── Start screen ── -->
+<!-- Start screen -->
 <div id="startScreen">
   <div class="start-icon">🛒</div>
   <h2>SWADESH FOOD MART</h2>
@@ -390,16 +283,15 @@ main {
   <p id="errMsg"></p>
 </div>
 
-<!-- ── Learn / Feedback modal ── -->
+<!-- Learn modal -->
 <div id="learnModal">
   <div id="learnBox">
     <h3>✏️ Correct the Model</h3>
-    <div class="lm-sub" id="learnSubtitle">What is this item actually called?</div>
+    <div class="lm-sub" id="learnSubtitle">What category is this actually?</div>
     <img id="learnPreview" src="" alt="captured frame">
     <div id="learnSearchWrap">
-      <input id="learnInput" type="text" placeholder="Type produce name (e.g. Banana Flower...)"
-             oninput="onLearnSearch(this.value)"
-             onfocus="onLearnSearch(this.value)"
+      <input id="learnInput" type="text" placeholder="Type category (e.g. chilli, fruit, root...)"
+             oninput="onLearnSearch(this.value)" onfocus="onLearnSearch(this.value)"
              autocomplete="off" autocorrect="off" spellcheck="false">
       <div id="learnSuggestions"></div>
     </div>
@@ -411,19 +303,19 @@ main {
   </div>
 </div>
 
-<!-- ── Bill modal ── -->
+<!-- Bill modal -->
 <div id="billModal">
   <div id="billBox">
     <div id="billContent"></div>
     <div id="billActions">
-      <button id="printBtn"    onclick="window.print()">🖨 Print</button>
+      <button id="printBtn"     onclick="window.print()">🖨 Print</button>
       <button id="closeBillBtn" onclick="closeBill()">Close</button>
       <button id="newOrderBtn"  onclick="newOrder()">New Order</button>
     </div>
   </div>
 </div>
 
-<!-- ── Header ── -->
+<!-- Header -->
 <header>
   <div class="brand">
     <div class="brand-logo">🌿</div>
@@ -433,28 +325,23 @@ main {
     </div>
   </div>
   <div class="header-right">
-    <select id="camSelect" onchange="switchCam(this.value)">
-      <option>Select Camera</option>
-    </select>
+    <select id="camSelect" onchange="switchCam(this.value)"><option>Select Camera</option></select>
     <div id="liveBadge"><div id="liveDot"></div>LIVE</div>
   </div>
 </header>
 
-<!-- ── Main ── -->
 <main>
-
   <!-- Camera side -->
   <div id="camSide">
     <video id="video" autoplay playsinline muted></video>
     <canvas id="overlay"></canvas>
     <span id="fpsTag"></span>
-
     <div id="camBottom">
       <div id="camCards">
-        <div class="cam-card empty" id="cc0" onclick="pickCard(0)"><div class="cc-name">—</div><div class="cc-conf">—</div></div>
-        <div class="cam-card empty" id="cc1" onclick="pickCard(1)"><div class="cc-name">—</div><div class="cc-conf">—</div></div>
-        <div class="cam-card empty" id="cc2" onclick="pickCard(2)"><div class="cc-name">—</div><div class="cc-conf">—</div></div>
-        <div class="cam-card empty" id="cc3" onclick="pickCard(3)"><div class="cc-name">—</div><div class="cc-conf">—</div></div>
+        <div class="cam-card empty" id="cc0" onclick="pickCard(0)"><div class="cc-cat">—</div><div class="cc-name">—</div><div class="cc-conf">—</div></div>
+        <div class="cam-card empty" id="cc1" onclick="pickCard(1)"><div class="cc-cat">—</div><div class="cc-name">—</div><div class="cc-conf">—</div></div>
+        <div class="cam-card empty" id="cc2" onclick="pickCard(2)"><div class="cc-cat">—</div><div class="cc-name">—</div><div class="cc-conf">—</div></div>
+        <div class="cam-card empty" id="cc3" onclick="pickCard(3)"><div class="cc-cat">—</div><div class="cc-name">—</div><div class="cc-conf">—</div></div>
       </div>
       <button id="captureBtn" onclick="manualCapture()">📷</button>
     </div>
@@ -462,18 +349,28 @@ main {
 
   <!-- POS side -->
   <div id="posSide">
-
-    <!-- Detected item + Add button -->
     <div id="addStrip">
-      <div class="strip-label">Detected / Search</div>
-      <div id="addRow">
-        <button id="addMainBtn" disabled onclick="addToCart()">Scan to detect</button>
-        <button id="wrongBtn"   disabled onclick="openLearn()">✗ Wrong?</button>
+      <div class="strip-label">Detected Item</div>
+
+      <!-- Category badge — shown when camera detects something -->
+      <div id="catBadge">
+        <div>
+          <div id="catBadgeName">—</div>
+          <div id="catBadgeConf" style="font-size:11px;color:var(--muted);margin-top:2px"></div>
+        </div>
+        <button id="catBadgeWrong" disabled onclick="openLearn()">✗ Wrong?</button>
       </div>
+
+      <!-- Product buttons — shown when category is selected -->
+      <div id="productGrid"></div>
+
+      <!-- Waiting state -->
+      <div id="waitMsg">Point camera at produce and press 📷</div>
+
       <!-- Manual search -->
-      <div id="searchWrap">
+      <div id="searchWrap" style="margin-top:8px">
         <span id="searchIcon">🔍</span>
-        <input id="searchInput" type="text" placeholder="Search produce (e.g. karela, tomato...)"
+        <input id="searchInput" type="text" placeholder="Search item manually..."
                oninput="onSearch(this.value)" onblur="hideSearch()" autocomplete="off" autocorrect="off">
         <div id="searchResults"></div>
       </div>
@@ -493,7 +390,6 @@ main {
       </div>
     </div>
 
-    <!-- Footer totals -->
     <div id="cartFooter">
       <div class="total-row"><span>Subtotal</span><span id="subtotalVal">$0.00</span></div>
       <div class="total-row"><span>Tax (5%)</span><span id="taxVal">$0.00</span></div>
@@ -506,45 +402,66 @@ main {
 <canvas id="captureCanvas" style="display:none" width="640" height="480"></canvas>
 
 <script>
-// ── Produce list + prices ────────────────────────────────────────────────────
-const PRODUCE = [
-  "Banana","Banana Flower","Beetroot","Bell pepper","Boxed Sweets",
-  "Cabbage","Cauliflower","Chayote","Chinese Green Eggplant","Chinese eggplant",
-  "Cilantro","Coconut","Curry leaves","Dasakai","Garlic","Ginger","Guava",
-  "Home made snacks","Indian eggplant","Karela","Lady stickers","Leaves",
-  "Lemon","Long green beans","Mint","Muli","Mums","Okra","Pan Leaves",
-  "Papaya","Pearl","Potato","Pumpkin","Red Onions","Roti","Snake Guard",
-  "Squah","String beans","Sweet Potato","Thai Chilli","Tindora","Tomato",
-  "Turai","White Onions",
-];
-const PRICES = {
-  "Banana":2.99,"Banana Flower":3.49,"Beetroot":1.99,"Bell pepper":2.49,
-  "Boxed Sweets":6.99,"Cabbage":1.49,"Cauliflower":2.49,"Chayote":1.99,
-  "Chinese Green Eggplant":2.99,"Chinese eggplant":2.99,"Cilantro":0.99,
-  "Coconut":2.49,"Curry leaves":1.49,"Dasakai":2.99,"Garlic":1.99,
-  "Ginger":2.49,"Guava":2.99,"Home made snacks":5.99,"Indian eggplant":2.49,
-  "Karela":2.99,"Lady stickers":3.49,"Leaves":1.49,"Lemon":0.79,
-  "Long green beans":2.49,"Mint":0.99,"Muli":1.99,"Mums":3.99,
-  "Okra":2.49,"Pan Leaves":1.99,"Papaya":3.49,"Pearl":3.99,"Potato":1.49,
-  "Pumpkin":2.49,"Red Onions":1.49,"Roti":2.49,"Snake Guard":2.99,
-  "Squah":2.49,"String beans":2.49,"Sweet Potato":1.99,"Thai Chilli":1.99,
-  "Tindora":2.49,"Tomato":1.99,"Turai":2.49,"White Onions":1.49,
+// ── Data ─────────────────────────────────────────────────────────────────────
+const PRODUCT_MAP = {
+  "banana":       ["Banana", "BURRO BANANA", "Banana Flower"],
+  "beans":        ["Beans Regular", "Long Green Beans", "String Beans", "FLAT VELOR"],
+  "chilli":       ["FLORIDA LONG CHILLI", "Thai Chilli", "Bell Pepper"],
+  "coconut":      ["Coconut"],
+  "dasakai":      ["Dasakai"],
+  "eggplant":     ["Indian Eggplant", "Chinese Eggplant", "Chinese Green Eggplant", "Thai Eggplant"],
+  "fruit":        ["Guava", "Papaya", "FRESH CHIKKU", "Lemon", "Chayote"],
+  "gourd":        ["Pumpkin", "Snake Gourd", "Ridge Gourd", "Bitter Gourd", "Tindora", "Squash"],
+  "ladyfinger":   ["Okra / Ladies Finger"],
+  "ladystickers": ["Lady Stickers"],
+  "leafy":        ["Cabbage", "Cauliflower", "Mint", "Cilantro", "Curry Leaves", "Leaves", "Pan Leaves"],
+  "onion":        ["Red Onions", "White Onions"],
+  "root":         ["Potato", "Sweet Potato", "Beetroot", "Radish", "Ginger", "Garlic"],
+  "special":      ["Boxed Sweets", "Home made snacks", "POLI", "Roti", "Mums", "Pearl"],
+  "tomato":       ["Tomato"],
 };
-const PALETTE = [
-  "#00c853","#2196f3","#ff9800","#e91e63",
-  "#00bcd4","#9c27b0","#ff5722","#cddc39","#f44336","#8bc34a",
-];
+
+const PRICES = {
+  "Banana":2.99,"BURRO BANANA":3.49,"Banana Flower":4.99,
+  "Beans Regular":3.99,"Long Green Beans":3.49,"String Beans":3.99,"FLAT VELOR":4.49,
+  "FLORIDA LONG CHILLI":5.99,"Thai Chilli":6.99,"Bell Pepper":4.99,
+  "Coconut":2.49,
+  "Dasakai":3.99,
+  "Indian Eggplant":2.99,"Chinese Eggplant":3.49,"Chinese Green Eggplant":3.49,"Thai Eggplant":3.99,
+  "Guava":3.99,"Papaya":2.99,"FRESH CHIKKU":4.99,"Lemon":5.99,"Chayote":2.99,
+  "Pumpkin":1.99,"Snake Gourd":3.49,"Ridge Gourd":3.49,"Bitter Gourd":3.99,"Tindora":4.99,"Squash":2.49,
+  "Okra / Ladies Finger":4.99,
+  "Lady Stickers":5.49,
+  "Cabbage":1.99,"Cauliflower":2.99,"Mint":1.49,"Cilantro":1.49,"Curry Leaves":1.99,"Leaves":1.49,"Pan Leaves":2.99,
+  "Red Onions":1.99,"White Onions":1.99,
+  "Potato":1.49,"Sweet Potato":2.49,"Beetroot":2.99,"Radish":1.99,"Ginger":5.99,"Garlic":6.99,
+  "Boxed Sweets":8.99,"Home made snacks":5.99,"POLI":4.99,"Roti":3.99,"Mums":2.99,"Pearl":3.99,
+  "Tomato":1.99,
+};
+
+// All individual items for search
+const ALL_ITEMS = Object.values(PRODUCT_MAP).flat();
+
+const CAT_LABELS = {
+  "banana":"Banana","beans":"Beans / Pods","chilli":"Chilli","coconut":"Coconut",
+  "dasakai":"Dasakai","eggplant":"Eggplant","fruit":"Fruit","gourd":"Gourd",
+  "ladyfinger":"Ladies Finger","ladystickers":"Lady Stickers","leafy":"Leafy Greens",
+  "onion":"Onion","root":"Root Vegetables","special":"Special Items","tomato":"Tomato",
+};
+
+const PALETTE = ["#00c853","#2196f3","#ff9800","#e91e63","#00bcd4","#9c27b0","#ff5722","#cddc39","#f44336","#8bc34a","#ff6f00","#0097a7","#ad1457","#00695c","#f57f17"];
 const colCache = {};
 function colour(name) {
   if (!colCache[name]) colCache[name] = PALETTE[Object.keys(colCache).length % PALETTE.length];
   return colCache[name];
 }
+// pre-assign consistent colours per category
+Object.keys(PRODUCT_MAP).forEach(colour);
 
 // ── State ────────────────────────────────────────────────────────────────────
 let stream = null, activeDeviceId = null;
 let allBoxes = [], topUnique = [], selIdx = 0;
-let cart = [];   // [{name, qty, price, colour}]
-let manualPending = false;
+let cart = [];
 let fps = 0, frameCount = 0, lastFpsTime = performance.now();
 
 const video         = document.getElementById("video");
@@ -553,25 +470,14 @@ const ctx           = overlay.getContext("2d");
 const captureCanvas = document.getElementById("captureCanvas");
 const captureCtx    = captureCanvas.getContext("2d");
 
-// ── Camera enumeration ───────────────────────────────────────────────────────
+// ── Camera ───────────────────────────────────────────────────────────────────
 async function loadCameras() {
-  try {
-    // need a temp stream to unlock device labels
-    const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
-    tmp.getTracks().forEach(t => t.stop());
-  } catch (_) {}
+  try { const tmp = await navigator.mediaDevices.getUserMedia({video:true}); tmp.getTracks().forEach(t=>t.stop()); } catch(_) {}
   const devs = await navigator.mediaDevices.enumerateDevices();
   const cams  = devs.filter(d => d.kind === "videoinput");
-  [document.getElementById("camSelect"),
-   document.getElementById("startCamSelect")].forEach(sel => {
+  [document.getElementById("camSelect"), document.getElementById("startCamSelect")].forEach(sel => {
     sel.innerHTML = "";
-    cams.forEach((c, i) => {
-      const o = document.createElement("option");
-      o.value = c.deviceId;
-      o.textContent = c.label || `Camera ${i + 1}`;
-      sel.appendChild(o);
-    });
-    // default: prefer back camera or external
+    cams.forEach((c,i) => { const o=document.createElement("option"); o.value=c.deviceId; o.textContent=c.label||`Camera ${i+1}`; sel.appendChild(o); });
     const ext = cams.find(c => /usb|external|back|rear|environment/i.test(c.label));
     if (ext) sel.value = ext.deviceId;
   });
@@ -589,33 +495,24 @@ async function startCamera() {
   autoLoop();
 }
 
-async function switchCam(deviceId) {
-  activeDeviceId = deviceId;
-  await openStream(deviceId);
-}
+async function switchCam(deviceId) { activeDeviceId = deviceId; await openStream(deviceId); }
 
 async function openStream(deviceId) {
   if (stream) stream.getTracks().forEach(t => t.stop());
-  const constraints = {
-    video: deviceId
-      ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-      : { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
-    audio: false,
-  };
   try {
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: deviceId ? {deviceId:{exact:deviceId},width:{ideal:1280},height:{ideal:720}} : {facingMode:"environment",width:{ideal:1280},height:{ideal:720}},
+      audio: false,
+    });
     video.srcObject = stream;
     await video.play();
-  } catch (e) {
+  } catch(e) {
     document.getElementById("errMsg").textContent = "Camera error: " + e.message;
     document.getElementById("startScreen").style.display = "flex";
   }
 }
 
-function resizeOverlay() {
-  overlay.width  = overlay.offsetWidth;
-  overlay.height = overlay.offsetHeight;
-}
+function resizeOverlay() { overlay.width = overlay.offsetWidth; overlay.height = overlay.offsetHeight; }
 window.addEventListener("resize", resizeOverlay);
 
 // ── Draw loop ────────────────────────────────────────────────────────────────
@@ -623,88 +520,75 @@ function drawLoop() {
   requestAnimationFrame(drawLoop);
   resizeOverlay();
   ctx.clearRect(0, 0, overlay.width, overlay.height);
-
   frameCount++;
   const now = performance.now();
-  if (now - lastFpsTime >= 1000) {
-    fps = frameCount; frameCount = 0; lastFpsTime = now;
-    document.getElementById("fpsTag").textContent = fps + " fps";
-  }
+  if (now - lastFpsTime >= 1000) { fps = frameCount; frameCount = 0; lastFpsTime = now; document.getElementById("fpsTag").textContent = fps + " fps"; }
 
-  const sx = overlay.width / 640, sy = overlay.height / 480;
+  const sx = overlay.width/640, sy = overlay.height/480;
   allBoxes.forEach(det => {
     const col = colour(det.class);
-    const { x1, y1, x2, y2 } = det.bbox;
-    const rx = x1*sx, ry = y1*sy, rw = (x2-x1)*sx, rh = (y2-y1)*sy;
+    const {x1,y1,x2,y2} = det.bbox;
+    const rx=x1*sx, ry=y1*sy, rw=(x2-x1)*sx, rh=(y2-y1)*sy;
     const isSel = det.class === (topUnique[selIdx]||{}).class;
-
-    ctx.globalAlpha = isSel ? 1 : 0.5;
-    ctx.fillStyle   = col + "22"; ctx.fillRect(rx, ry, rw, rh);
-    ctx.strokeStyle = col; ctx.lineWidth = isSel ? 3.5 : 2; ctx.strokeRect(rx, ry, rw, rh);
-
-    const fs  = Math.max(11, Math.min(16, rw/9));
-    const lbl = `${det.class}  ${Math.round(det.confidence*100)}%`;
-    ctx.font  = `bold ${fs}px -apple-system,sans-serif`;
-    const tw  = ctx.measureText(lbl).width;
-    const lh  = fs + 8;
-    const lx  = rx, ly = ry > lh ? ry - lh : ry;
-    ctx.fillStyle = col; ctx.fillRect(lx, ly, tw+12, lh);
+    ctx.globalAlpha = isSel ? 1 : 0.45;
+    ctx.fillStyle = col+"22"; ctx.fillRect(rx,ry,rw,rh);
+    ctx.strokeStyle = col; ctx.lineWidth = isSel ? 3.5 : 2; ctx.strokeRect(rx,ry,rw,rh);
+    const fs = Math.max(11,Math.min(16,rw/9));
+    const lbl = `${CAT_LABELS[det.class]||det.class}  ${Math.round(det.confidence*100)}%`;
+    ctx.font = `bold ${fs}px -apple-system,sans-serif`;
+    const tw = ctx.measureText(lbl).width, lh = fs+8;
+    const lx = rx, ly = ry > lh ? ry-lh : ry;
+    ctx.fillStyle = col; ctx.fillRect(lx,ly,tw+12,lh);
     ctx.globalAlpha = 1; ctx.fillStyle = "#fff"; ctx.fillText(lbl, lx+6, ly+lh-5);
   });
 }
 
-// ── Detection ────────────────────────────────────────────────────────────────
+// ── Detection loop ────────────────────────────────────────────────────────────
 async function autoLoop() {
   while (true) {
-    if (!manualPending && video.srcObject && video.readyState >= 2) await detect();
-    await sleep(1000);
+    if (video.srcObject && video.readyState >= 2) await runDetect();
+    await sleep(1200);
   }
 }
 
 async function manualCapture() {
-  manualPending = true;
   const btn = document.getElementById("captureBtn");
   btn.classList.add("flash");
-  await detect();
+  await runDetect();
   setTimeout(() => btn.classList.remove("flash"), 300);
-  manualPending = false;
 }
 
-async function detect() {
+async function runDetect() {
   try {
     captureCtx.drawImage(video, 0, 0, 640, 480);
     const blob = await new Promise(r => captureCanvas.toBlob(r, "image/jpeg", 0.85));
     const form = new FormData(); form.append("file", blob, "frame.jpg");
-    const res  = await fetch("/detect", { method: "POST", body: form });
+    const res  = await fetch("/detect", {method:"POST", body:form});
     const data = await res.json();
-    allBoxes   = data.detections || [];
-    topUnique  = dedup4(allBoxes);
-    selIdx     = 0;
+    allBoxes  = data.detections || [];
+    topUnique = dedup4(allBoxes);
+    selIdx    = 0;
     updateCamCards();
-    updateAddBtn();
-  } catch (_) {}
+    updateProductArea();
+  } catch(_) {}
 }
 
 function dedup4(dets) {
   const best = {};
   dets.forEach(d => { if (!best[d.class] || d.confidence > best[d.class].confidence) best[d.class] = d; });
-  return Object.values(best).sort((a,b) => b.confidence - a.confidence).slice(0, 4);
+  return Object.values(best).sort((a,b) => b.confidence - a.confidence).slice(0,4);
 }
 
 function pickCard(i) {
   if (!topUnique[i]) return;
   selIdx = i;
   updateCamCards();
-  updateAddBtn();
-  // single tap on card = add to cart immediately
-  const det = topUnique[i];
-  addItemToCart(det.class);
-  sendConfirmation(det);
-  // flash the card green briefly
-  const el = document.getElementById("cc" + i);
+  updateProductArea();
+  // flash card
+  const el = document.getElementById("cc"+i);
   const prev = el.style.background;
-  el.style.background = "rgba(0,200,83,0.5)";
-  setTimeout(() => el.style.background = prev, 400);
+  el.style.background = "rgba(0,200,83,0.4)";
+  setTimeout(() => el.style.background = prev, 350);
 }
 
 function updateCamCards() {
@@ -714,86 +598,113 @@ function updateCamCards() {
     if (!det) {
       el.className = "cam-card empty";
       el.style.setProperty("--col","#555");
+      el.querySelector(".cc-cat").textContent  = "—";
       el.querySelector(".cc-name").textContent = "—";
       el.querySelector(".cc-conf").textContent = "—";
       continue;
     }
-    const col = colour(det.class);
-    el.className = "cam-card" + (i === selIdx ? " active" : "");
+    const col   = colour(det.class);
+    const items = PRODUCT_MAP[det.class] || [];
+    const label = items.length === 1 ? items[0] : (CAT_LABELS[det.class] || det.class);
+    el.className = "cam-card" + (i===selIdx ? " active" : "");
     el.style.setProperty("--col", col);
-    el.querySelector(".cc-name").textContent = det.class;
-    el.querySelector(".cc-conf").textContent = Math.round(det.confidence * 100) + "%";
+    el.querySelector(".cc-cat").textContent  = det.class.toUpperCase();
+    el.querySelector(".cc-name").textContent = label;
+    el.querySelector(".cc-conf").textContent = Math.round(det.confidence*100) + "%";
   }
 }
 
-function updateAddBtn() {
-  const btn   = document.getElementById("addMainBtn");
-  const wrong = document.getElementById("wrongBtn");
-  const det   = topUnique[selIdx];
-  if (det) {
-    btn.disabled   = false;
-    btn.textContent = `+ Add  ${det.class}  (${Math.round(det.confidence*100)}%)`;
-    btn.style.background = colour(det.class);
-    wrong.disabled = false;
-  } else {
-    btn.disabled   = true;
-    btn.textContent = "Scan to detect";
-    btn.style.background = "";
-    wrong.disabled = true;
+// ── Product area in POS panel ─────────────────────────────────────────────────
+function updateProductArea() {
+  const badge    = document.getElementById("catBadge");
+  const grid     = document.getElementById("productGrid");
+  const waitMsg  = document.getElementById("waitMsg");
+  const wrongBtn = document.getElementById("catBadgeWrong");
+  const det      = topUnique[selIdx];
+
+  if (!det) {
+    badge.style.display = "none";
+    grid.innerHTML = "";
+    waitMsg.style.display = "block";
+    wrongBtn.disabled = true;
+    return;
   }
+
+  // show category badge
+  waitMsg.style.display = "none";
+  badge.style.display   = "flex";
+  wrongBtn.disabled     = false;
+  const col = colour(det.class);
+  document.getElementById("catBadgeName").textContent = (CAT_LABELS[det.class]||det.class).toUpperCase();
+  document.getElementById("catBadgeName").style.color = col;
+  document.getElementById("catBadgeConf").textContent = Math.round(det.confidence*100) + "% confidence";
+
+  // render product buttons
+  const items = PRODUCT_MAP[det.class] || [det.class];
+  grid.innerHTML = items.map((item, i) => {
+    const price = PRICES[item];
+    const priceStr = price != null ? `$${price.toFixed(2)}/kg` : "—";
+    const single = items.length === 1 ? " single" : "";
+    return `<button class="prod-btn${single}" onclick="addProduct('${item.replace(/'/g,"\\'")}','${det.class}')"
+              style="border-color:${col}33">
+              <div class="prod-btn-name">${item}</div>
+              <div class="prod-btn-price" style="color:${col}">${priceStr}</div>
+            </button>`;
+  }).join("");
 }
 
-// ── Manual search ─────────────────────────────────────────────────────────────
+function addProduct(name, category) {
+  addItemToCart(name, category);
+  // flash confirm on the selected card
+  const el = document.getElementById("cc"+selIdx);
+  if (el) { el.style.background = "rgba(0,200,83,0.5)"; setTimeout(()=>el.style.background="",400); }
+  // silently save confirmation
+  const det = topUnique[selIdx];
+  if (det) sendConfirmation(det);
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
 function onSearch(val) {
   const box = document.getElementById("searchResults");
   const q   = val.trim().toLowerCase();
-  if (!q) { box.style.display = "none"; return; }
-  const matches = PRODUCE.filter(p => p.toLowerCase().includes(q)).slice(0, 8);
-  if (!matches.length) { box.style.display = "none"; return; }
+  if (!q) { box.style.display="none"; return; }
+  const matches = ALL_ITEMS.filter(p => p.toLowerCase().includes(q)).slice(0,8);
+  if (!matches.length) { box.style.display="none"; return; }
   box.innerHTML = matches.map(p => {
     const hi = p.replace(new RegExp(`(${q})`, "gi"), `<span class="sr-highlight">$1</span>`);
-    return `<div class="sr-item" onmousedown="addByName('${p}')">${hi}</div>`;
+    return `<div class="sr-item" onmousedown="addByName('${p.replace(/'/g,"\\'")}')"> ${hi}</div>`;
   }).join("");
   box.style.display = "block";
 }
-function hideSearch() { setTimeout(() => document.getElementById("searchResults").style.display = "none", 150); }
-
+function hideSearch() { setTimeout(() => document.getElementById("searchResults").style.display="none", 150); }
 function addByName(name) {
   document.getElementById("searchInput").value = "";
   document.getElementById("searchResults").style.display = "none";
-  addItemToCart(name);
+  addItemToCart(name, null);
 }
 
-// ── Cart ─────────────────────────────────────────────────────────────────────
-function addToCart() {
-  const det = topUnique[selIdx];
-  if (det) {
-    addItemToCart(det.class);
-    sendConfirmation(det);   // silently save as confirmed training example
-  }
-}
-
-function addItemToCart(name) {
+// ── Cart ──────────────────────────────────────────────────────────────────────
+function addItemToCart(name, category) {
+  const col = category ? colour(category) : colour(name);
   const existing = cart.find(i => i.name === name);
   if (existing) { existing.qty++; }
-  else { cart.push({ name, qty: 1, price: PRICES[name] || 1.99, colour: colour(name) }); }
+  else { cart.push({name, qty:1, price: PRICES[name]||1.99, colour:col}); }
   renderCart();
 }
 
 function changeQty(name, delta) {
-  const item = cart.find(i => i.name === name);
+  const item = cart.find(i => i.name===name);
   if (!item) return;
   item.qty += delta;
-  if (item.qty <= 0) cart = cart.filter(i => i.name !== name);
+  if (item.qty <= 0) cart = cart.filter(i => i.name!==name);
   renderCart();
 }
-
-function removeItem(name) { cart = cart.filter(i => i.name !== name); renderCart(); }
+function removeItem(name) { cart = cart.filter(i => i.name!==name); renderCart(); }
 function clearCart()      { cart = []; renderCart(); }
 
 function renderCart() {
   const list = document.getElementById("cartList");
-  if (cart.length === 0) {
+  if (!cart.length) {
     list.innerHTML = `<div id="emptyCart"><div class="ec-icon">🛒</div>Scan a vegetable or search manually<br>to add items to cart</div>`;
     setTotals(0);
     document.getElementById("checkoutBtn").disabled = true;
@@ -806,53 +717,41 @@ function renderCart() {
       <div class="ci-dot" style="background:${item.colour}"></div>
       <div style="flex:1;min-width:0">
         <div class="ci-name">${item.name}</div>
-        <div class="ci-price">$${item.price.toFixed(2)} each</div>
+        <div class="ci-price">$${item.price.toFixed(2)}/kg</div>
       </div>
       <div class="qty-row">
-        <button class="qty-btn" onclick="changeQty('${item.name}',-1)">−</button>
+        <button class="qty-btn" onclick="changeQty('${item.name.replace(/'/g,"\\'")}', -1)">−</button>
         <span class="qty-num">${item.qty}</span>
-        <button class="qty-btn" onclick="changeQty('${item.name}',1)">+</button>
+        <button class="qty-btn" onclick="changeQty('${item.name.replace(/'/g,"\\'")}', 1)">+</button>
       </div>
       <div class="ci-total">$${line}</div>
-      <button class="ci-del" onclick="removeItem('${item.name}')">✕</button>
+      <button class="ci-del" onclick="removeItem('${item.name.replace(/'/g,"\\'")}')">✕</button>
     </div>`;
   }).join("");
-  const sub = cart.reduce((s, i) => s + i.qty * i.price, 0);
+  const sub = cart.reduce((s,i) => s + i.qty*i.price, 0);
   setTotals(sub);
 }
 
 function setTotals(sub) {
-  const tax   = sub * 0.05;
-  const total = sub + tax;
+  const tax = sub * 0.05;
   document.getElementById("subtotalVal").textContent = "$" + sub.toFixed(2);
   document.getElementById("taxVal").textContent      = "$" + tax.toFixed(2);
-  document.getElementById("totalVal").textContent    = "$" + total.toFixed(2);
+  document.getElementById("totalVal").textContent    = "$" + (sub+tax).toFixed(2);
 }
 
-// ── Checkout & Bill ───────────────────────────────────────────────────────────
+// ── Checkout ──────────────────────────────────────────────────────────────────
 function checkout() {
   if (!cart.length) return;
-  const now  = new Date();
-  const date = now.toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"});
-  const time = now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
-  const sub  = cart.reduce((s,i) => s + i.qty * i.price, 0);
-  const tax  = sub * 0.05;
+  const now   = new Date();
+  const date  = now.toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"});
+  const time  = now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+  const sub   = cart.reduce((s,i) => s+i.qty*i.price, 0);
+  const tax   = sub * 0.05;
   const total = sub + tax;
   const billNo = "SFM-" + Date.now().toString().slice(-6);
-
-  const rows = cart.map(i =>
-    `<div class="bill-row">
-       <span class="item-name">${i.name}</span>
-       <span class="item-qty">${i.qty}</span>
-       <span class="item-amt">$${(i.qty*i.price).toFixed(2)}</span>
-     </div>`
-  ).join("");
-
+  const rows   = cart.map(i => `<div class="bill-row"><span class="item-name">${i.name}</span><span class="item-qty">${i.qty}</span><span class="item-amt">$${(i.qty*i.price).toFixed(2)}</span></div>`).join("");
   document.getElementById("billContent").innerHTML = `
-    <div class="bill-header">
-      <div class="bill-store">🌿 SWADESH FOOD MART</div>
-      <div class="bill-sub">Fresh Produce · AI Billing</div>
-    </div>
+    <div class="bill-header"><div class="bill-store">🌿 SWADESH FOOD MART</div><div class="bill-sub">Fresh Produce · AI Billing</div></div>
     <hr class="bill-divider">
     <div class="bill-meta"><span>Bill #${billNo}</span><span>${date} · ${time}</span></div>
     <div class="bill-cols"><span>Item</span><span style="width:40px;text-align:center">Qty</span><span style="width:60px;text-align:right">Amount</span></div>
@@ -864,166 +763,97 @@ function checkout() {
     </div>
     <hr class="bill-divider">
     <div class="bill-footer">Thank you for shopping at Swadesh Food Mart!<br>Please come again 🙏</div>`;
-
   document.getElementById("billModal").style.display = "flex";
 }
-
-function closeBill()  { document.getElementById("billModal").style.display = "none"; }
-function newOrder()   { closeBill(); clearCart(); }
+function closeBill() { document.getElementById("billModal").style.display = "none"; }
+function newOrder()  { closeBill(); clearCart(); }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ── Silent confirmation — saves image when user adds correct item to cart ─────
+// ── Feedback ──────────────────────────────────────────────────────────────────
 async function sendConfirmation(det) {
   if (!det) return;
   try {
     captureCtx.drawImage(video, 0, 0, 640, 480);
-    const blob = await new Promise(r => captureCanvas.toBlob(r, "image/jpeg", 0.85));
+    const blob = await new Promise(r => captureCanvas.toBlob(r,"image/jpeg",0.85));
     const form = new FormData();
-    form.append("file",            blob, "confirm.jpg");
+    form.append("file", blob, "confirm.jpg");
     form.append("correct_label",   det.class);
     form.append("predicted_label", det.class);
     form.append("feedback_type",   "confirmation");
-    form.append("bbox_x1",   det.bbox.x1);
-    form.append("bbox_y1",   det.bbox.y1);
-    form.append("bbox_x2",   det.bbox.x2);
-    form.append("bbox_y2",   det.bbox.y2);
-    form.append("img_width",  "640");
-    form.append("img_height", "480");
-    fetch("/feedback", { method: "POST", body: form }); // fire and forget
-  } catch (_) {}
+    form.append("bbox_x1", det.bbox.x1); form.append("bbox_y1", det.bbox.y1);
+    form.append("bbox_x2", det.bbox.x2); form.append("bbox_y2", det.bbox.y2);
+    form.append("img_width","640"); form.append("img_height","480");
+    fetch("/feedback", {method:"POST", body:form});
+  } catch(_) {}
 }
 
-// ── Learn / Feedback modal ────────────────────────────────────────────────────
-let learnImageBlob = null;
-let learnPredicted = "";
-
+let learnImageBlob = null, learnPredicted = "";
 function openLearn() {
-  const det  = topUnique[selIdx];
+  const det = topUnique[selIdx];
   learnPredicted = det ? det.class : "unknown";
-
   captureCtx.drawImage(video, 0, 0, 640, 480);
   captureCanvas.toBlob(blob => {
     learnImageBlob = blob;
     document.getElementById("learnPreview").src = URL.createObjectURL(blob);
   }, "image/jpeg", 0.92);
-
-  document.getElementById("learnSubtitle").textContent =
-    det ? `Model said "${det.class}" — what is it really?`
-        : "What is this item called?";
+  document.getElementById("learnSubtitle").textContent = det ? `Model said "${CAT_LABELS[det.class]||det.class}" — what is it really?` : "What category is this item?";
   document.getElementById("learnInput").value = "";
   document.getElementById("learnStatus").style.display = "none";
-  document.getElementById("learnSaveBtn").textContent = "💾 Save & Teach Model";
-  document.getElementById("learnSaveBtn").disabled = false;
-  document.getElementById("learnModal").style.display = "flex";
-  setTimeout(() => {
-    document.getElementById("learnInput").focus();
-    onLearnSearch("");   // show all produce immediately on open
-  }, 200);
+  document.getElementById("learnSaveBtn").textContent  = "💾 Save & Teach Model";
+  document.getElementById("learnSaveBtn").disabled     = false;
+  document.getElementById("learnModal").style.display  = "flex";
+  setTimeout(() => { document.getElementById("learnInput").focus(); onLearnSearch(""); }, 200);
 }
 
-function closeLearn() {
-  document.getElementById("learnModal").style.display = "none";
-  document.getElementById("learnSuggestions").style.display = "none";
-  learnImageBlob = null;
-}
+function closeLearn() { document.getElementById("learnModal").style.display="none"; document.getElementById("learnSuggestions").style.display="none"; learnImageBlob=null; }
 
 function onLearnSearch(val) {
   const box = document.getElementById("learnSuggestions");
   const q   = val.trim().toLowerCase();
-
-  // filter produce list — show all when empty, filter when typing
-  const matches = q
-    ? PRODUCE.filter(p => p.toLowerCase().includes(q))
-    : [...PRODUCE];
-
-  const exactMatch = PRODUCE.some(p => p.toLowerCase() === q);
-  const typedClean = val.trim();
-  const capName    = typedClean.replace(/\b\w/g, c => c.toUpperCase());
-  const showNew    = typedClean.length > 1 && !exactMatch;
-
-  let html = matches.slice(0, 8).map(p => {
-    const display = q
-      ? p.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")})`, "gi"),
-          `<span style="color:var(--green);font-weight:800">$1</span>`)
-      : p;
-    return `<div class="ls-item" onmousedown="selectLearnItem('${p}',false)">${display}</div>`;
-  }).join("");
-
-  // always show "Create new produce" option at bottom if typed something new
-  if (showNew) {
-    html += `<div class="ls-item ls-new" onmousedown="selectLearnItem('${capName}',true)">
-               ➕ Create new produce: <strong>${capName}</strong>
-             </div>`;
-  }
-
-  box.innerHTML = html || `<div class="ls-item" style="color:var(--muted);pointer-events:none">No matches</div>`;
+  const cats = Object.keys(PRODUCT_MAP);
+  const matches = q ? cats.filter(c => c.includes(q) || (CAT_LABELS[c]||"").toLowerCase().includes(q)) : [...cats];
+  box.innerHTML = matches.map(c => {
+    const label = CAT_LABELS[c]||c;
+    return `<div class="ls-item" onmousedown="selectLearnItem('${c}')">${label} <span style="color:var(--muted);font-size:11px">(${c})</span></div>`;
+  }).join("") || `<div class="ls-item" style="color:var(--muted);pointer-events:none">No matches</div>`;
   box.style.display = "block";
 }
 
-function selectLearnItem(name, isNew) {
-  document.getElementById("learnInput").value = name;
+function selectLearnItem(cat) {
+  document.getElementById("learnInput").value = cat;
   document.getElementById("learnSuggestions").style.display = "none";
   const btn = document.getElementById("learnSaveBtn");
-  if (isNew) {
-    btn.textContent      = `➕ Create "${name}" & Save`;
-    btn.style.background = "#f59e0b";
-  } else {
-    btn.textContent      = `💾 Save as "${name}"`;
-    btn.style.background = "#f59e0b";
-  }
+  btn.textContent = `💾 Save as "${CAT_LABELS[cat]||cat}"`;
+  btn.style.background = "#f59e0b";
 }
 
 async function submitFeedback() {
   const correctLabel = document.getElementById("learnInput").value.trim();
-  if (!correctLabel) {
-    document.getElementById("learnInput").focus();
-    document.getElementById("learnInput").style.borderColor = "#ef4444";
-    setTimeout(() => document.getElementById("learnInput").style.borderColor = "", 1500);
-    return;
-  }
+  if (!correctLabel) { document.getElementById("learnInput").focus(); document.getElementById("learnInput").style.borderColor="#ef4444"; setTimeout(()=>document.getElementById("learnInput").style.borderColor="",1500); return; }
   if (!learnImageBlob) { alert("No image captured. Try scanning again."); return; }
-
-  const isNew  = !PRODUCE.some(p => p.toLowerCase() === correctLabel.toLowerCase());
-  const btn    = document.getElementById("learnSaveBtn");
-  const status = document.getElementById("learnStatus");
-  btn.disabled    = true;
-  btn.textContent = "Saving...";
-
+  const btn = document.getElementById("learnSaveBtn"), status = document.getElementById("learnStatus");
+  btn.disabled = true; btn.textContent = "Saving...";
   try {
     const form = new FormData();
-    form.append("file",            learnImageBlob, "correction.jpg");
+    form.append("file", learnImageBlob, "correction.jpg");
     form.append("correct_label",   correctLabel);
     form.append("predicted_label", learnPredicted);
-    form.append("feedback_type",   isNew ? "new_class" : "correction");
-
-    const res  = await fetch("/feedback", { method: "POST", body: form });
-    const raw  = await res.text();
-    let data;
-    try { data = JSON.parse(raw); }
-    catch { throw new Error(`Server returned: ${raw.slice(0, 100)}`); }
-    if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
-
-    status.style.display = "block";
-    status.style.color   = "#00c853";
-    status.textContent   = isNew
-      ? `✓ New produce "${correctLabel}" created and saved!`
-      : `✓ Saved as "${correctLabel}"! Model will improve on next retrain.`;
+    form.append("feedback_type",   "correction");
+    const res = await fetch("/feedback", {method:"POST", body:form});
+    const raw = await res.text();
+    let data; try { data=JSON.parse(raw); } catch { throw new Error(`Server: ${raw.slice(0,100)}`); }
+    if (!res.ok) throw new Error(data.detail||`Error ${res.status}`);
+    status.style.display = "block"; status.style.color = "#00c853";
+    status.textContent = `✓ Saved as "${CAT_LABELS[correctLabel]||correctLabel}". Model will improve on next retrain.`;
     btn.textContent = "Saved ✓";
-
-    // add new class to local PRODUCE list for this session
-    if (isNew && !PRODUCE.includes(correctLabel)) PRODUCE.push(correctLabel);
-
     setTimeout(closeLearn, 2200);
-  } catch (e) {
-    status.style.display  = "block";
-    status.style.color    = "#ef4444";
-    const isBucket = e.message.includes("503") || e.message.includes("not configured") || e.message.includes("storage");
-    status.innerHTML = isBucket
-      ? `⚠️ Storage not set up yet.<br><small>Run the bucket setup commands first, then redeploy with --set-env-vars FEEDBACK_BUCKET=...</small>`
+  } catch(e) {
+    status.style.display = "block"; status.style.color = "#ef4444";
+    status.innerHTML = e.message.includes("503")||e.message.includes("not configured")
+      ? `⚠️ Storage not configured yet.`
       : `Error: ${e.message}`;
-    btn.disabled    = false;
-    btn.textContent = "💾 Save & Teach Model";
+    btn.disabled = false; btn.textContent = "💾 Save & Teach Model";
   }
 }
 </script>
