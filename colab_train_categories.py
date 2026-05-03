@@ -55,7 +55,7 @@ print()
 # STEP 6 — Train from scratch on A100 80GB
 from ultralytics import YOLO
 
-model = YOLO("yolov8m.pt")   # COCO pretrained backbone, fresh head for 15 classes
+model = YOLO("yolov8s.pt")   # small — same speed as old 51-class model, fine for 15 broad categories
 
 results = model.train(
     data    = f"{DATA_DIR}/data.yaml",
@@ -90,13 +90,13 @@ results = model.train(
     close_mosaic = 10,
 
     project = MODEL_DIR,
-    name    = "yolov8m-15class",
+    name    = "yolov8s-15class",
     save    = True,
     plots   = True,
 )
 
 # STEP 7 — Save checkpoints to Drive
-weights_dir = f"{MODEL_DIR}/yolov8m-15class/weights"
+weights_dir = f"{MODEL_DIR}/yolov8s-15class/weights"
 print("\nSaving checkpoints to Drive...")
 for ckpt in ["best.pt", "last.pt", "epoch20.pt", "epoch40.pt", "epoch60.pt", "epoch80.pt"]:
     src = f"{weights_dir}/{ckpt}"

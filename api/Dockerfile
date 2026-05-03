@@ -14,7 +14,6 @@ RUN pip install --no-cache-dir \
 # Install app dependencies
 RUN pip install --no-cache-dir \
     ultralytics \
-    onnxruntime \
     fastapi \
     uvicorn[standard] \
     python-multipart \
@@ -27,13 +26,7 @@ COPY best.pt        /app/best.pt
 COPY app.py         /app/app.py
 COPY static/        /app/static/
 
-# Export to ONNX at build time — 2-3x faster CPU inference than PyTorch
-RUN python -c "\
-from ultralytics import YOLO; \
-YOLO('/app/best.pt').export(format='onnx', imgsz=320, simplify=True, opset=12); \
-print('ONNX export done')"
-
-ENV MODEL_PATH=/app/best.onnx
+ENV MODEL_PATH=/app/best.pt
 ENV CONF_THRESHOLD=0.25
 ENV IMGSZ=320
 

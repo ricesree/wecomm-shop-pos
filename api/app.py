@@ -28,11 +28,6 @@ print(f"Loading model from {MODEL_PATH} ...")
 model = YOLO(MODEL_PATH)
 print(f"Model ready — classes: {list(model.names.values())}")
 
-# Warm-up: run one dummy inference so first real request is instant
-_dummy = np.zeros((480, 640, 3), dtype=np.uint8)
-model(_dummy, conf=CONF, verbose=False, imgsz=IMGSZ)
-print("Model warmed up.")
-
 _gcs_client = None
 def get_gcs():
     global _gcs_client
