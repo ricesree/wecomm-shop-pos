@@ -18,6 +18,8 @@ steps:
       - --region=us-central1
       - --platform=managed
       - --allow-unauthenticated
+      - --memory=1Gi
+      - --cpu=2
 
 images:
   - 'gcr.io/vegdetect/vegdetect-api'
