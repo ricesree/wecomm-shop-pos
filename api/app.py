@@ -21,7 +21,7 @@ def root(): return FileResponse("/app/static/index.html")
 
 MODEL_PATH      = os.environ.get("MODEL_PATH",       "/app/best.pt")
 CONF            = float(os.environ.get("CONF_THRESHOLD", "0.40"))
-IMGSZ           = int(os.environ.get("IMGSZ",            "320"))
+IMGSZ           = int(os.environ.get("IMGSZ",            "640"))
 FEEDBACK_BUCKET = os.environ.get("FEEDBACK_BUCKET",  "")
 
 print(f"Loading model from {MODEL_PATH} ...")
@@ -111,8 +111,8 @@ async def feedback(
         bucket = client.bucket(FEEDBACK_BUCKET)
         bucket.blob(img_path).upload_from_string(contents, content_type="image/jpeg")
 
-        CLASS_TO_ID = {name: i for i, name in model.names.items()}
-        cls_id = CLASS_TO_ID.get(correct_label)
+        CLASS_TO_ID = {name.lower(): i for i, name in model.names.items()}
+        cls_id = CLASS_TO_ID.get(correct_label.strip().lower())
         if cls_id is None:
             raise HTTPException(400, f"Unknown label: {correct_label}")
 
@@ -122,9 +122,8 @@ async def feedback(
             bw = max(0.01, min(1.0, (bbox_x2-bbox_x1)/img_width))
             bh = max(0.01, min(1.0, (bbox_y2-bbox_y1)/img_height))
             label_line = f"{cls_id} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}\n"
-        else:
-            label_line = f"{cls_id} 0.500000 0.500000 0.900000 0.900000\n"
-        bucket.blob(lbl_path).upload_from_string(label_line.encode(), content_type="text/plain")
+            bucket.blob(lbl_path).upload_from_string(label_line.encode(), content_type="text/plain")
+        # no bbox → image saved for reference only, not used for training
 
         meta = {"timestamp":ts,"correct_label":correct_label,"predicted_label":predicted_label,
                 "feedback_type":feedback_type,"has_real_bbox":bbox_x1 is not None}
