@@ -57,6 +57,31 @@ for sp in ("train", "val"):
     print(f"  {sp}: {n} images")
 print()
 
+# STEP 5.5 — Merge GCS feedback into dataset
+print("Merging feedback corrections from GCS...")
+from google.cloud import storage as gcs
+_bucket = gcs.Client().bucket("vegdetect-feedback-1076778092661")
+_added = 0
+import random as _random; _random.seed(99)
+for _blob in _bucket.list_blobs():
+    if not _blob.name.endswith(".jpg"): continue
+    _parts = _blob.name.split("/")
+    if len(_parts) < 3 or _parts[0] not in ("confirmations","corrections"): continue
+    _folder, _cls, _fname = _parts[0], _parts[1], _parts[2]
+    _stem = os.path.splitext(_fname)[0]
+    _lbl_blob = _bucket.blob(f"{_folder}/{_cls}/{_stem}.txt")
+    if not _lbl_blob.exists(): continue
+    _lbl = _lbl_blob.download_as_text().strip()
+    if not _lbl: continue
+    _sp = "train" if _random.random() < 0.85 else "val"
+    _oi = f"{DATA_DIR}/images/{_sp}/{_folder}_{_cls}_{_fname}"
+    _ol = f"{DATA_DIR}/labels/{_sp}/{_folder}_{_cls}_{_stem}.txt"
+    if os.path.exists(_oi): continue
+    with open(_oi,"wb") as f: f.write(_blob.download_as_bytes())
+    with open(_ol,"w")  as f: f.write(_lbl+"\n")
+    _added += 1
+print(f"  Added {_added} feedback images to dataset\n")
+
 # STEP 6 — Train from scratch on A100 80GB
 from ultralytics import YOLO
 
