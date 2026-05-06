@@ -7,7 +7,7 @@ GET  /health           — health check
 """
 
 import os, io, json, time, cv2, numpy as np
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -99,34 +99,40 @@ async def feedback(
     if not FEEDBACK_BUCKET:
         raise HTTPException(503, "Feedback storage not configured. Set FEEDBACK_BUCKET env var.")
 
-    contents = await file.read()
-    ts       = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")
-    folder   = {"confirmation":"confirmations","correction":"corrections","new_class":"new_classes"}.get(feedback_type,"corrections")
-    img_path = f"{folder}/{correct_label}/{ts}.jpg"
-    lbl_path = f"{folder}/{correct_label}/{ts}.txt"
-    meta_path= f"{folder}/{correct_label}/{ts}_info.json"
+    contents    = await file.read()
+    ts          = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
+    label_clean = correct_label.strip().lower()
+
+    CLASS_TO_ID = {name.lower(): i for i, name in model.names.items()}
+    cls_id = CLASS_TO_ID.get(label_clean)
+    if cls_id is None:
+        raise HTTPException(400, f"Unknown label: {correct_label}")
+
+    has_bbox = bbox_x1 is not None
+    if has_bbox:
+        folder = {"confirmation":"confirmations","correction":"corrections","new_class":"new_classes"}.get(feedback_type,"corrections")
+    else:
+        folder = "no_bbox"
+
+    img_path  = f"{folder}/{label_clean}/{ts}.jpg"
+    lbl_path  = f"{folder}/{label_clean}/{ts}.txt"
+    meta_path = f"{folder}/{label_clean}/{ts}_info.json"
 
     try:
         client = get_gcs()
         bucket = client.bucket(FEEDBACK_BUCKET)
         bucket.blob(img_path).upload_from_string(contents, content_type="image/jpeg")
 
-        CLASS_TO_ID = {name.lower(): i for i, name in model.names.items()}
-        cls_id = CLASS_TO_ID.get(correct_label.strip().lower())
-        if cls_id is None:
-            raise HTTPException(400, f"Unknown label: {correct_label}")
-
-        if bbox_x1 is not None:
+        if has_bbox:
             cx = max(0.0, min(1.0, ((bbox_x1+bbox_x2)/2)/img_width))
             cy = max(0.0, min(1.0, ((bbox_y1+bbox_y2)/2)/img_height))
             bw = max(0.01, min(1.0, (bbox_x2-bbox_x1)/img_width))
             bh = max(0.01, min(1.0, (bbox_y2-bbox_y1)/img_height))
             label_line = f"{cls_id} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}\n"
             bucket.blob(lbl_path).upload_from_string(label_line.encode(), content_type="text/plain")
-        # no bbox → image saved for reference only, not used for training
 
-        meta = {"timestamp":ts,"correct_label":correct_label,"predicted_label":predicted_label,
-                "feedback_type":feedback_type,"has_real_bbox":bbox_x1 is not None}
+        meta = {"timestamp":ts,"correct_label":label_clean,"predicted_label":predicted_label,
+                "feedback_type":feedback_type,"has_bbox":has_bbox}
         bucket.blob(meta_path).upload_from_string(json.dumps(meta,indent=2), content_type="application/json")
     except Exception as e:
         raise HTTPException(500, f"Storage error: {e}")
