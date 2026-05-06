@@ -108,31 +108,26 @@ async def feedback(
     if cls_id is None:
         raise HTTPException(400, f"Unknown label: {correct_label}")
 
-    has_bbox = bbox_x1 is not None
-    if has_bbox:
-        folder = {"confirmation":"confirmations","correction":"corrections","new_class":"new_classes"}.get(feedback_type,"corrections")
-    else:
-        folder = "no_bbox"
+    if bbox_x1 is None:
+        return JSONResponse({"status":"skipped","message":"No bounding box provided — not saved."})
 
+    folder    = {"confirmation":"confirmations","correction":"corrections","new_class":"new_classes"}.get(feedback_type,"corrections")
     img_path  = f"{folder}/{label_clean}/{ts}.jpg"
     lbl_path  = f"{folder}/{label_clean}/{ts}.txt"
     meta_path = f"{folder}/{label_clean}/{ts}_info.json"
+
+    cx = max(0.0, min(1.0, ((bbox_x1+bbox_x2)/2)/img_width))
+    cy = max(0.0, min(1.0, ((bbox_y1+bbox_y2)/2)/img_height))
+    bw = max(0.01, min(1.0, (bbox_x2-bbox_x1)/img_width))
+    bh = max(0.01, min(1.0, (bbox_y2-bbox_y1)/img_height))
+    label_line = f"{cls_id} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}\n"
 
     try:
         client = get_gcs()
         bucket = client.bucket(FEEDBACK_BUCKET)
         bucket.blob(img_path).upload_from_string(contents, content_type="image/jpeg")
-
-        if has_bbox:
-            cx = max(0.0, min(1.0, ((bbox_x1+bbox_x2)/2)/img_width))
-            cy = max(0.0, min(1.0, ((bbox_y1+bbox_y2)/2)/img_height))
-            bw = max(0.01, min(1.0, (bbox_x2-bbox_x1)/img_width))
-            bh = max(0.01, min(1.0, (bbox_y2-bbox_y1)/img_height))
-            label_line = f"{cls_id} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}\n"
-            bucket.blob(lbl_path).upload_from_string(label_line.encode(), content_type="text/plain")
-
-        meta = {"timestamp":ts,"correct_label":label_clean,"predicted_label":predicted_label,
-                "feedback_type":feedback_type,"has_bbox":has_bbox}
+        bucket.blob(lbl_path).upload_from_string(label_line.encode(), content_type="text/plain")
+        meta = {"timestamp":ts,"correct_label":label_clean,"predicted_label":predicted_label,"feedback_type":feedback_type}
         bucket.blob(meta_path).upload_from_string(json.dumps(meta,indent=2), content_type="application/json")
     except Exception as e:
         raise HTTPException(500, f"Storage error: {e}")
