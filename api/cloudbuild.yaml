@@ -20,6 +20,7 @@ steps:
       - --allow-unauthenticated
       - --memory=1Gi
       - --cpu=2
+      - --set-env-vars=FEEDBACK_BUCKET=vegdetect-feedback-1076778092661
 
 images:
   - 'gcr.io/vegdetect/vegdetect-api'
