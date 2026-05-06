@@ -20,7 +20,7 @@ app.mount("/static", StaticFiles(directory="/app/static"), name="static")
 def root(): return FileResponse("/app/static/index.html")
 
 MODEL_PATH      = os.environ.get("MODEL_PATH",       "/app/best.pt")
-CONF            = float(os.environ.get("CONF_THRESHOLD", "0.25"))
+CONF            = float(os.environ.get("CONF_THRESHOLD", "0.40"))
 IMGSZ           = int(os.environ.get("IMGSZ",            "320"))
 FEEDBACK_BUCKET = os.environ.get("FEEDBACK_BUCKET",  "")
 
@@ -111,14 +111,19 @@ async def feedback(
         bucket = client.bucket(FEEDBACK_BUCKET)
         bucket.blob(img_path).upload_from_string(contents, content_type="image/jpeg")
 
+        CLASS_TO_ID = {name: i for i, name in model.names.items()}
+        cls_id = CLASS_TO_ID.get(correct_label)
+        if cls_id is None:
+            raise HTTPException(400, f"Unknown label: {correct_label}")
+
         if bbox_x1 is not None:
             cx = max(0.0, min(1.0, ((bbox_x1+bbox_x2)/2)/img_width))
             cy = max(0.0, min(1.0, ((bbox_y1+bbox_y2)/2)/img_height))
             bw = max(0.01, min(1.0, (bbox_x2-bbox_x1)/img_width))
             bh = max(0.01, min(1.0, (bbox_y2-bbox_y1)/img_height))
-            label_line = f"0 {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}\n"
+            label_line = f"{cls_id} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}\n"
         else:
-            label_line = "0 0.500000 0.500000 0.900000 0.900000\n"
+            label_line = f"{cls_id} 0.500000 0.500000 0.900000 0.900000\n"
         bucket.blob(lbl_path).upload_from_string(label_line.encode(), content_type="text/plain")
 
         meta = {"timestamp":ts,"correct_label":correct_label,"predicted_label":predicted_label,
