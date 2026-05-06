@@ -26,9 +26,14 @@ os.makedirs(CKPT_DIR, exist_ok=True)
 # STEP 4 — Unzip dataset
 if os.path.exists(DATA_DIR):
     shutil.rmtree(DATA_DIR)
-print("Unzipping YOLO_CATEGORIES...")
-with zipfile.ZipFile(f"{DRIVE_ROOT}/YOLO_CATEGORIES.zip", "r") as z:
-    z.extractall("/content")
+zip_path = f"{DRIVE_ROOT}/YOLO_CATEGORIES_new.zip"
+if not os.path.exists(zip_path):
+    zip_path = f"{DRIVE_ROOT}/YOLO_CATEGORIES.zip"
+print(f"Unzipping {os.path.basename(zip_path)}...")
+with zipfile.ZipFile(zip_path, "r") as z:
+    for member in z.infolist():
+        member.filename = member.filename.replace("\\", "/")
+        z.extract(member, "/content")
 print("Done.\n")
 
 # STEP 5 — Fix data.yaml path (Windows path -> Colab path)
@@ -55,23 +60,23 @@ print()
 # STEP 6 — Train from scratch on A100 80GB
 from ultralytics import YOLO
 
-model = YOLO("yolov8s.pt")   # small — same speed as old 51-class model, fine for 15 broad categories
+model = YOLO("yolov8s.pt")  # start from COCO pretrained — train all 15 classes from scratch
 
 results = model.train(
     data    = f"{DATA_DIR}/data.yaml",
     epochs  = 100,
     imgsz   = 640,
-    batch   = 128,           # A100 80GB handles this comfortably
+    batch   = 256,
     device  = "cuda",
     workers = 16,
-    cache   = "ram",         # 167 GB RAM — cache all images in CPU RAM
+    cache   = "ram",
     amp     = True,
 
-    patience     = 15,
-    save_period  = 20,
+    patience     = 20,
+    save_period  = 10,
 
     cos_lr          = True,
-    lr0             = 0.015,
+    lr0             = 0.01,
     lrf             = 0.01,
     warmup_epochs   = 3,
     warmup_momentum = 0.8,
@@ -98,7 +103,7 @@ results = model.train(
 # STEP 7 — Save checkpoints to Drive
 weights_dir = f"{MODEL_DIR}/yolov8s-15class/weights"
 print("\nSaving checkpoints to Drive...")
-for ckpt in ["best.pt", "last.pt", "epoch20.pt", "epoch40.pt", "epoch60.pt", "epoch80.pt"]:
+for ckpt in ["best.pt", "last.pt", "epoch30.pt", "epoch50.pt", "epoch70.pt", "epoch90.pt"]:
     src = f"{weights_dir}/{ckpt}"
     if os.path.exists(src):
         shutil.copy(src, f"{CKPT_DIR}/{ckpt}")

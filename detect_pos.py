@@ -43,7 +43,7 @@ PRODUCT_MAP = {
     "leafy":       ["Cabbage", "Cauliflower", "Mint", "Cilantro", "Curry Leaves", "Leaves", "Pan Leaves"],
     "onion":       ["Red Onions", "White Onions"],
     "root":        ["Potato", "Sweet Potato", "Beetroot", "Radish", "Ginger", "Garlic"],
-    "special":     ["Boxed Sweets", "Home made snacks", "POLI", "Roti", "Mums", "Pearl"],
+    "special":     ["Boxed Sweets", "Home made snacks", "POLI", "Roti", "Mums", "Pearl", "Homemade Curd"],
     "tomato":      ["Tomato"],
 }
 

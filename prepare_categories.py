@@ -1,7 +1,7 @@
 """
-Prepare category-level YOLO dataset from MANUAL_LABELS.
-Uses DATASET_FULL (from DATASET.zip) so every folder has its images.
-No SAM masking — trains directly on real counter images.
+Prepare category-level YOLO dataset from MANUAL_LABELS + new unlabeled images.
+Uses DATASET_FULL (from DATASET.zip) for existing labeled data.
+Reads "all new" folder for new images (uses default center bbox).
 
 Run:   python prepare_categories.py
 Out:   YOLO_CATEGORIES/  -> zip it, upload to Google Drive as YOLO_CATEGORIES.zip
@@ -10,16 +10,16 @@ Out:   YOLO_CATEGORIES/  -> zip it, upload to Google Drive as YOLO_CATEGORIES.zi
 import os, shutil, random, yaml, cv2
 import numpy as np
 
-DATASET_DIR = r"c:\Users\sreet\Desktop\TUNE-DATAPOS\DATASET\DATASET_FULL"
-LABELS_DIR  = r"c:\Users\sreet\Desktop\TUNE-DATAPOS\MANUAL_LABELS"
-OUTPUT_DIR  = r"c:\Users\sreet\Desktop\TUNE-DATAPOS\YOLO_CATEGORIES"
+DATASET_DIR  = r"c:\Users\sreet\Desktop\TUNE-DATAPOS\DATASET\DATASET_FULL"
+LABELS_DIR   = r"c:\Users\sreet\Desktop\TUNE-DATAPOS\MANUAL_LABELS"
+OUTPUT_DIR   = r"c:\Users\sreet\Desktop\TUNE-DATAPOS\YOLO_CATEGORIES"
 
-MIN_TARGET  = 500
-TRAIN_SPLIT = 0.85
+AUGS_PER_IMG = 5       # ~5 augmented versions per original image
+MAX_PER_CLASS = 1500   # cap per class
+TRAIN_SPLIT  = 0.85
 random.seed(42)
 
-# --- 11 YOLO categories --------------------------------------------------
-
+# 16 YOLO categories (curd added at end to keep existing indices 0-14 stable)
 YOLO_CLASSES = ["banana", "beans", "chilli", "coconut", "dasakai",
                 "eggplant", "fruit", "gourd", "ladyfinger", "ladystickers",
                 "leafy", "onion", "root", "special", "tomato"]
@@ -29,25 +29,25 @@ CLASS_TO_CATEGORY = {
     "Banana":                 "banana",
     "BURRO BANANA":           "banana",
     "Banana Flower":          "banana",
-    # EGGPLANT (dasakai is separate)
+    # EGGPLANT
     "Indian eggplant":        "eggplant",
     "Chinese eggplant":       "eggplant",
     "Chinese Green Eggplant": "eggplant",
     "THAI EGG PLANT":         "eggplant",
-    # DASAKAI - own category
+    # DASAKAI
     "Dasakai":                "dasakai",
     # CHILLI
     "FLORIDA  LONG CHILLI":   "chilli",
     "Thai Chilli":            "chilli",
     "Bell pepper":            "chilli",
-    # BEANS / PODS (okra and lady stickers are separate)
+    # BEANS
     "BEANS REGULAR":          "beans",
     "Long green beans":       "beans",
     "String beans":           "beans",
     "FLAT VELOR":             "beans",
-    # LADIES FINGER - own category
+    # LADIES FINGER
     "Okra":                   "ladyfinger",
-    # LADY STICKERS - own category
+    # LADY STICKERS
     "Lady stickers":          "ladystickers",
     # LEAFY
     "Cabbage":                "leafy",
@@ -67,31 +67,37 @@ CLASS_TO_CATEGORY = {
     "Muli":                   "root",
     "Ginger":                 "root",
     "Garlic":                 "root",
-    # GOURD FAMILY (chayote moved to fruit)
+    # GOURD
     "Pumpkin":                "gourd",
     "Squah":                  "gourd",
     "Snake Guard":            "gourd",
     "Turai":                  "gourd",
     "Karela":                 "gourd",
     "Tindora":                "gourd",
-    # FRUIT (chayote included here)
+    # FRUIT
     "Guava":                  "fruit",
     "Papaya":                 "fruit",
     "FRESH CHIKKU":           "fruit",
     "Lemon":                  "fruit",
     "Chayote":                "fruit",
-    # COCONUT - own category
+    # COCONUT
     "Coconut":                "coconut",
+    # NEW EGGPLANT VARIETIES
+    "Graphiti Eggplant":      "eggplant",
+    # NEW ROOT
+    "Edo":                    "root",
     # TOMATO
     "Tomato":                 "tomato",
-    # STORE ITEMS (non-produce but sold at counter)
+    # SPECIAL
     "Boxed Sweets":           "special",
     "Home made snacks":       "special",
     "POLI":                   "special",
     "Roti":                   "special",
     "Mums":                   "special",
     "Pearl":                  "special",
+    "Homemade Curd":          "special",
 }
+
 
 CATEGORIES = YOLO_CLASSES
 CAT_IDX    = {c: i for i, c in enumerate(CATEGORIES)}
@@ -189,6 +195,7 @@ def main():
     cat_pairs = {c: [] for c in CATEGORIES}
     raw_total = skipped = 0
 
+    # --- Pass 1: existing labeled data (MANUAL_LABELS + DATASET_FULL) ----
     for cls_name in sorted(os.listdir(LABELS_DIR)):
         cls_lbl_path = os.path.join(LABELS_DIR, cls_name)
         if not os.path.isdir(cls_lbl_path):
@@ -233,14 +240,14 @@ def main():
             raw_total += 1
 
     print(f"\n{'='*55}")
-    print(f"Raw labeled images: {raw_total}  (skipped no-image: {skipped})")
+    print(f"Labeled images: {raw_total}  (skipped: {skipped})")
     print(f"YOLO Categories ({len(CATEGORIES)}): {CATEGORIES}")
     print(f"{'='*55}")
     for c in CATEGORIES:
-        print(f"  {c:<12} {len(cat_pairs[c]):>4} images")
+        print(f"  {c:<14} {len(cat_pairs[c]):>4} images")
 
     print(f"\n{'-'*55}")
-    print(f"Balancing & augmenting weak categories up to minimum {MIN_TARGET} images...")
+    print(f"Balancing & augmenting (~{AUGS_PER_IMG}x per image, cap {MAX_PER_CLASS})...")
     print(f"{'-'*55}")
 
     grand_total = 0
@@ -248,11 +255,35 @@ def main():
         pairs = cat_pairs[cat]
         n = len(pairs)
         if n == 0:
-            print(f"  {cat:<12} NO IMAGES -- skipping"); continue
+            print(f"  {cat:<14} NO IMAGES -- skipping"); continue
 
-        augmented = list(pairs); ai = ii = 0
-        while len(augmented) < MIN_TARGET:
-            ip, sl = pairs[ii % len(pairs)]
+        target = min(MAX_PER_CLASS, max(500, n * AUGS_PER_IMG))
+        shuffled = list(pairs)
+        random.shuffle(shuffled)
+        cut = max(1, int(len(shuffled) * TRAIN_SPLIT))
+        cat_train = cat_val = 0
+
+        def write_img(img, lbl, fname, split):
+            cv2.imwrite(f"{OUTPUT_DIR}/images/{split}/{fname}.jpg", img)
+            with open(f"{OUTPUT_DIR}/labels/{split}/{fname}.txt", "w") as f:
+                f.write("\n".join(lbl) + "\n")
+
+        # Write originals directly to disk
+        for sp, items in [("train", shuffled[:cut]), ("val", shuffled[cut:])]:
+            for ip, lbl in items:
+                img = cv2.imread(ip)
+                if img is None: continue
+                fname = f"{cat}_{os.path.splitext(os.path.basename(ip))[0]}"
+                write_img(img, lbl, fname, sp)
+                if sp == "train": cat_train += 1
+                else: cat_val += 1
+
+        written = cat_train + cat_val
+
+        # Augment and write directly to disk — no in-memory accumulation
+        ai = ii = 0
+        while written < target:
+            ip, sl = shuffled[ii % len(shuffled)]
             an, af = AUGMENTS[ai % len(AUGMENTS)]
             img = cv2.imread(ip)
             if img is None:
@@ -261,29 +292,16 @@ def main():
                 aimg, albl = af(img, sl)
             except Exception:
                 ii += 1; continue
-            augmented.append((f"__aug_{an}_{ai}", aimg, albl))
+            sp = "train" if random.random() < TRAIN_SPLIT else "val"
+            write_img(aimg, albl, f"{cat}__aug_{an}_{ai}", sp)
+            if sp == "train": cat_train += 1
+            else: cat_val += 1
+            written += 1
             ai += 1
             if ai % len(AUGMENTS) == 0: ii += 1
 
-        random.shuffle(augmented)
-        cut = max(1, int(len(augmented) * TRAIN_SPLIT))
-
-        for split, items in {"train": augmented[:cut], "val": augmented[cut:]}.items():
-            for item in items:
-                if len(item) == 2:
-                    ip, lbl = item
-                    img = cv2.imread(ip)
-                    if img is None: continue
-                    fname = f"{cat}_{os.path.splitext(os.path.basename(ip))[0]}"
-                else:
-                    aid, img, lbl = item
-                    fname = f"{cat}{aid}"
-                cv2.imwrite(f"{OUTPUT_DIR}/images/{split}/{fname}.jpg", img)
-                with open(f"{OUTPUT_DIR}/labels/{split}/{fname}.txt", "w") as f:
-                    f.write("\n".join(lbl) + "\n")
-                grand_total += 1
-
-        print(f"  {cat:<12} {n:>4} raw  ->  {len(augmented)}  (train {cut} / val {len(augmented)-cut})")
+        grand_total += written
+        print(f"  {cat:<14} {n:>4} raw  x~{AUGS_PER_IMG}  ->  {written}  (train {cat_train} / val {cat_val})")
 
     cfg = {
         "path":  OUTPUT_DIR,
