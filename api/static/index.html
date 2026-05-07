@@ -48,7 +48,60 @@ main {
   grid-template-columns: 1fr 380px;
 }
 @media (max-width: 767px) {
-  main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  main { grid-template-columns: 1fr; grid-template-rows: 42dvh 1fr; }
+
+  header { padding: 8px 12px; gap: 8px; }
+  .brand-logo { font-size: 20px; }
+  .brand-name { font-size: 13px; }
+  .brand-sub  { font-size: 9px; }
+  #camSelect  { display: none; }
+  #liveBadge  { font-size: 10px; padding: 4px 8px; }
+  #liveDot    { width: 6px; height: 6px; }
+
+  #camBottom  { padding: 40px 10px 10px; gap: 8px; }
+  .cam-card   { min-width: 68px; padding: 7px 6px; border-radius: 10px; }
+  .cam-card .cc-cat  { font-size: 8px; }
+  .cam-card .cc-name { font-size: 10px; }
+  .cam-card .cc-conf { font-size: 12px; }
+  #captureBtn { width: 54px; height: 54px; font-size: 20px;
+                box-shadow: 0 0 0 2px #000, 0 0 0 4px #fff; }
+  #fpsTag     { font-size: 10px; padding: 2px 6px; }
+
+  #posSide    { overflow-y: auto; }
+  #addStrip   { padding: 10px 12px 8px; }
+  .strip-label { font-size: 10px; margin-bottom: 6px; }
+  #catBadge   { padding: 7px 10px; margin-bottom: 6px; }
+  #catBadgeName { font-size: 14px; }
+  #catBadgeConf { font-size: 10px; }
+  #catBadgeWrong { font-size: 10px; padding: 3px 7px; }
+
+  #productGrid { gap: 5px; margin-bottom: 6px; }
+  .prod-btn   { padding: 8px 8px; border-radius: 8px; }
+  .prod-btn-name  { font-size: 11px; }
+  .prod-btn-price { font-size: 11px; }
+
+  #searchInput { font-size: 13px; padding: 9px 12px 9px 30px; }
+  #searchIcon  { font-size: 13px; }
+  #waitMsg     { font-size: 12px; padding: 12px 8px; }
+
+  #cartSection { overflow: visible; }
+  #cartList    { overflow: visible; max-height: none; }
+  #cartHeader  { padding: 8px 12px 6px; }
+  #cartHeader h2 { font-size: 12px; }
+  .cart-item   { padding: 7px 0; }
+  .ci-name     { font-size: 12px; }
+  .ci-price    { font-size: 11px; }
+  .ci-total    { font-size: 12px; }
+  .qty-btn     { width: 28px; height: 28px; font-size: 15px; }
+  .qty-num     { font-size: 13px; }
+
+  #cartFooter  { padding: 10px 12px; }
+  .total-row   { font-size: 12px; }
+  .total-row.grand { font-size: 16px; margin-bottom: 10px; }
+  #checkoutBtn { padding: 13px; font-size: 15px; border-radius: 10px; }
+
+  #billModal   { padding: 0; align-items: flex-end; }
+  #billBox     { border-radius: 16px 16px 0 0; max-height: 92dvh; }
 }
 
 /* Camera side */
