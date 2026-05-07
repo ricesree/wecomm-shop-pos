@@ -48,46 +48,50 @@ main {
   grid-template-columns: 1fr 380px;
 }
 @media (max-width: 767px) {
-  main { grid-template-columns: 1fr; grid-template-rows: 42dvh 1fr; }
+  main { grid-template-columns: 1fr; grid-template-rows: 52dvh 1fr; }
 
-  header { padding: 8px 12px; gap: 8px; }
-  .brand-logo { font-size: 20px; }
-  .brand-name { font-size: 13px; }
-  .brand-sub  { font-size: 9px; }
-  #camSelect  { display: none; }
-  #liveBadge  { font-size: 10px; padding: 4px 8px; }
-  #liveDot    { width: 6px; height: 6px; }
+  /* ── Compact header: single line, no wrapping ── */
+  header       { padding: 6px 10px; gap: 6px; min-height: 0; }
+  .brand-logo  { font-size: 16px; }
+  .brand-name  { font-size: 11px; white-space: nowrap; overflow: hidden;
+                 text-overflow: ellipsis; max-width: 120px; }
+  .brand-sub   { display: none; }
+  #camSelect   { display: none; }
+  #liveBadge   { font-size: 10px; padding: 3px 7px; gap: 4px; flex-shrink: 0; }
+  #liveDot     { width: 5px; height: 5px; }
 
-  #camBottom  { padding: 40px 10px 10px; gap: 8px; }
-  .cam-card   { min-width: 68px; padding: 7px 6px; border-radius: 10px; }
+  /* ── Camera area ── */
+  #camBottom   { padding: 36px 10px 10px; gap: 7px; }
+  .cam-card    { min-width: 66px; padding: 6px 6px; border-radius: 10px; }
   .cam-card .cc-cat  { font-size: 8px; }
   .cam-card .cc-name { font-size: 10px; }
   .cam-card .cc-conf { font-size: 12px; }
-  #captureBtn { width: 54px; height: 54px; font-size: 20px;
-                box-shadow: 0 0 0 2px #000, 0 0 0 4px #fff; }
-  #fpsTag     { font-size: 10px; padding: 2px 6px; }
+  #captureBtn  { width: 52px; height: 52px; font-size: 20px;
+                 box-shadow: 0 0 0 2px #000, 0 0 0 4px #fff; flex-shrink: 0; }
+  #fpsTag      { font-size: 9px; padding: 2px 5px; top: 8px; right: 8px; }
 
-  #posSide    { overflow-y: auto; }
-  #addStrip   { padding: 10px 12px 8px; }
-  .strip-label { font-size: 10px; margin-bottom: 6px; }
-  #catBadge   { padding: 7px 10px; margin-bottom: 6px; }
-  #catBadgeName { font-size: 14px; }
-  #catBadgeConf { font-size: 10px; }
+  /* ── POS panel: scrollable ── */
+  #posSide     { overflow-y: auto; }
+  #addStrip    { padding: 8px 12px 6px; }
+  .strip-label { font-size: 10px; margin-bottom: 5px; }
+  #catBadge    { padding: 6px 10px; margin-bottom: 6px; }
+  #catBadgeName  { font-size: 13px; }
+  #catBadgeConf  { font-size: 10px; }
   #catBadgeWrong { font-size: 10px; padding: 3px 7px; }
 
   #productGrid { gap: 5px; margin-bottom: 6px; }
-  .prod-btn   { padding: 8px 8px; border-radius: 8px; }
+  .prod-btn    { padding: 7px 8px; border-radius: 8px; }
   .prod-btn-name  { font-size: 11px; }
   .prod-btn-price { font-size: 11px; }
 
   #searchInput { font-size: 13px; padding: 9px 12px 9px 30px; }
   #searchIcon  { font-size: 13px; }
-  #waitMsg     { font-size: 12px; padding: 12px 8px; }
+  #waitMsg     { font-size: 12px; padding: 10px 8px; }
 
   #cartSection { overflow: visible; }
   #cartList    { overflow: visible; max-height: none; }
-  #cartHeader  { padding: 8px 12px 6px; }
-  #cartHeader h2 { font-size: 12px; }
+  #cartHeader  { padding: 6px 12px 5px; }
+  #cartHeader h2 { font-size: 11px; }
   .cart-item   { padding: 7px 0; }
   .ci-name     { font-size: 12px; }
   .ci-price    { font-size: 11px; }
