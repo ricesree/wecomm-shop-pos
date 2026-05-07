@@ -126,7 +126,7 @@ results = model.train(
 )
 
 # STEP 7 — Save checkpoints to Drive
-weights_dir = f"{MODEL_DIR}/yolov8s-15class/weights"
+weights_dir = str(results.save_dir) + "/weights"  # actual output dir (handles auto-increment)
 print("\nSaving checkpoints to Drive...")
 for ckpt in ["best.pt", "last.pt", "epoch30.pt", "epoch50.pt", "epoch70.pt", "epoch90.pt"]:
     src = f"{weights_dir}/{ckpt}"
