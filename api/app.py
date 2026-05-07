@@ -12,6 +12,7 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from ultralytics import YOLO
+from inference_filter import load_thresholds, apply_class_thresholds, get_base_conf
 
 app = FastAPI(title="Swadesh Food Mart — POS Detection API", version="3.0")
 app.mount("/static", StaticFiles(directory="/app/static"), name="static")
@@ -19,14 +20,18 @@ app.mount("/static", StaticFiles(directory="/app/static"), name="static")
 @app.get("/")
 def root(): return FileResponse("/app/static/index.html")
 
-MODEL_PATH      = os.environ.get("MODEL_PATH",       "/app/best.pt")
-CONF            = float(os.environ.get("CONF_THRESHOLD", "0.40"))
-IMGSZ           = int(os.environ.get("IMGSZ",            "640"))
-FEEDBACK_BUCKET = os.environ.get("FEEDBACK_BUCKET",  "")
+MODEL_PATH        = os.environ.get("MODEL_PATH",        "/app/best.pt")
+CONF              = float(os.environ.get("CONF_THRESHOLD", "0.40"))
+IMGSZ             = int(os.environ.get("IMGSZ",            "640"))
+FEEDBACK_BUCKET   = os.environ.get("FEEDBACK_BUCKET",  "")
+THRESHOLDS_PATH   = os.environ.get("THRESHOLDS_PATH",  "/app/thresholds.json")
 
 print(f"Loading model from {MODEL_PATH} ...")
 model = YOLO(MODEL_PATH)
 print(f"Model ready — classes: {list(model.names.values())}")
+
+CLASS_THRESHOLDS = load_thresholds(THRESHOLDS_PATH, fallback=CONF)
+BASE_CONF        = get_base_conf(CLASS_THRESHOLDS, fallback=CONF)
 
 _gcs_client = None
 def get_gcs():
@@ -59,7 +64,7 @@ async def detect(file: UploadFile = File(...)):
         raise HTTPException(400, "Could not decode image.")
 
     t0      = time.time()
-    results = model(img, conf=CONF, verbose=False, imgsz=IMGSZ)[0]
+    results = model(img, conf=BASE_CONF, verbose=False, imgsz=IMGSZ)[0]
     elapsed = round(time.time() - t0, 3)
 
     detections = []
@@ -74,6 +79,7 @@ async def detect(file: UploadFile = File(...)):
             "bbox":       {"x1": x1, "y1": y1, "x2": x2, "y2": y2},
         })
 
+    detections = apply_class_thresholds(detections, CLASS_THRESHOLDS, fallback=CONF)
     detections.sort(key=lambda d: d["confidence"], reverse=True)
     return JSONResponse({
         "detections":   detections,
