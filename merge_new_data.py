@@ -51,6 +51,7 @@ for src_folder, target_name in MERGE_MAP.items():
     dst_lbl = os.path.join(MANUAL_LABELS, target_name)
     os.makedirs(dst_img, exist_ok=True)
     os.makedirs(dst_lbl, exist_ok=True)
+    
 
     for fname in os.listdir(src_path):
         src_file = os.path.join(src_path, fname)

@@ -1,7 +1,8 @@
 # =============================================================================
-# TRAIN 15-CLASS POS VEGETABLE DETECTOR  —  A100 80GB + DRIVE SAFE
+# TRAIN 15-CLASS POS VEGETABLE DETECTOR  —  YOLO11l  —  A100 80GB
 # =============================================================================
-# Upload YOLO_CATEGORIES_new.zip to MyDrive/TUNE-DATAPOS/ before running
+# Requires: YOLO_CATEGORIES_new.zip in MyDrive/TUNE-DATAPOS/
+# Model: YOLO11l  |  Epochs: 140  |  No early stop  |  Checkpoint every 10
 # =============================================================================
 
 # STEP 1 — Install + Mount
@@ -61,11 +62,11 @@ print()
 # STEP 6 — Train (saves directly to Drive)
 from ultralytics import YOLO
 
-model = YOLO("yolov8s.pt")
+model = YOLO("yolo11l.pt")
 
 results = model.train(
     data    = yaml_path,
-    epochs  = 130,
+    epochs  = 140,
     imgsz   = 640,
     batch   = 256,
     device  = "cuda",
@@ -73,8 +74,8 @@ results = model.train(
     cache   = "ram",
     amp     = True,
 
-    patience     = 20,
-    save_period  = 10,
+    patience     = 0,        # 0 = disabled, runs all 140 epochs no matter what
+    save_period  = 10,      # save checkpoint every 10 epochs
 
     cos_lr          = True,
     lr0             = 0.01,
@@ -96,7 +97,7 @@ results = model.train(
     close_mosaic = 10,
 
     project = MODEL_DIR,
-    name    = "yolov8s-15class",
+    name    = "yolo11l-15class",
     save    = True,
     plots   = True,
 )
@@ -104,8 +105,11 @@ results = model.train(
 # STEP 7 — Copy checkpoints to Drive/checkpoints/
 weights_dir = str(results.save_dir) + "/weights"
 print("\nCopying checkpoints...")
-for ckpt in ["best.pt", "last.pt", "epoch30.pt", "epoch50.pt", "epoch70.pt",
-             "epoch90.pt", "epoch110.pt", "epoch120.pt", "epoch130.pt"]:
+for ckpt in ["best.pt", "last.pt",
+             "epoch10.pt",  "epoch20.pt",  "epoch30.pt",  "epoch40.pt",
+             "epoch50.pt",  "epoch60.pt",  "epoch70.pt",  "epoch80.pt",
+             "epoch90.pt",  "epoch100.pt", "epoch110.pt", "epoch120.pt",
+             "epoch130.pt", "epoch140.pt"]:
     src = f"{weights_dir}/{ckpt}"
     if os.path.exists(src):
         dest = "best_new.pt" if ckpt == "best.pt" else ckpt

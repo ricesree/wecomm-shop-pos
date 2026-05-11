@@ -19,7 +19,7 @@ MAX_PER_CLASS = 1500   # cap per class
 TRAIN_SPLIT  = 0.85
 random.seed(42)
 
-# 16 YOLO categories (curd added at end to keep existing indices 0-14 stable)
+# 15 YOLO categories (unchanged)
 YOLO_CLASSES = ["banana", "beans", "chilli", "coconut", "dasakai",
                 "eggplant", "fruit", "gourd", "ladyfinger", "ladystickers",
                 "leafy", "onion", "root", "special", "tomato"]
@@ -34,12 +34,14 @@ CLASS_TO_CATEGORY = {
     "Chinese eggplant":       "eggplant",
     "Chinese Green Eggplant": "eggplant",
     "THAI EGG PLANT":         "eggplant",
+    "Graphiti Eggplant":      "eggplant",
     # DASAKAI
     "Dasakai":                "dasakai",
-    # CHILLI
+    # CHILLI — hot chilli AND bell pepper / capsicum
     "FLORIDA  LONG CHILLI":   "chilli",
     "Thai Chilli":            "chilli",
     "Bell pepper":            "chilli",
+    "Capsicum":               "chilli",
     # BEANS
     "BEANS REGULAR":          "beans",
     "Long green beans":       "beans",
@@ -67,6 +69,7 @@ CLASS_TO_CATEGORY = {
     "Muli":                   "root",
     "Ginger":                 "root",
     "Garlic":                 "root",
+    "Edo":                    "root",
     # GOURD
     "Pumpkin":                "gourd",
     "Squah":                  "gourd",
@@ -82,12 +85,10 @@ CLASS_TO_CATEGORY = {
     "Chayote":                "fruit",
     # COCONUT
     "Coconut":                "coconut",
-    # NEW EGGPLANT VARIETIES
-    "Graphiti Eggplant":      "eggplant",
-    # NEW ROOT
-    "Edo":                    "root",
     # TOMATO
     "Tomato":                 "tomato",
+    "Roma Tomato":            "tomato",
+    "Indian Round Tomato":    "tomato",
     # SPECIAL
     "Boxed Sweets":           "special",
     "Home made snacks":       "special",
@@ -96,6 +97,8 @@ CLASS_TO_CATEGORY = {
     "Mums":                   "special",
     "Pearl":                  "special",
     "Homemade Curd":          "special",
+    # NEW ROOT
+    "Graphiti Eggplant":      "eggplant",
 }
 
 

@@ -38,5 +38,8 @@ __pycache__/
 *.pyd
 .env
 
+# Colab scripts with embedded API keys — run locally/Colab only, not for review
+colab_prepare_lvis.py
+
 # Claude memory
 .claude/
