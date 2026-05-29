@@ -44,8 +44,8 @@ STEP        = 0.02   # sweep step size: 0.05, 0.07, 0.09, ... 0.95
 
 CLASS_NAMES = [
     "banana", "beans", "chilli", "coconut", "dasakai",
-    "eggplant", "fruit", "gourd", "ladyfinger", "ladystickers",
-    "leafy", "onion", "root", "special", "tomato"
+    "eggplant", "fruit", "gourd", "ladyfinger", "leafy",
+    "onion", "root", "special", "tomato"
 ]
 
 # =========================

@@ -26,13 +26,11 @@ MERGE_MAP = {
     "garlic new":              "Garlic",
     "graphiti eggplant new":   "Graphiti Eggplant", # new product folder
     "green egg plant new":     "Chinese Green Eggplant",
-    "homemade curd new":       "Homemade Curd",     # new class
     "lemon new":               "Lemon",
     "okra new":                "Okra",
     "papaya new":              "Papaya",
     "pearl new":               "Pearl",
     "potato new":              "Potato",
-    "snacks new":              "Home made snacks",
     "squash new":              "Squah",
     "sweet potato new":        "Sweet Potato",
     "tindora new":             "Tindora",
@@ -73,6 +71,6 @@ for src_folder, target_name in MERGE_MAP.items():
 
 print(f"\nDone. Images copied: {imgs_copied}  Labels copied: {lbls_copied}  Skipped (already exist): {skipped}")
 print("\nNew product folders added to DATASET_FULL:")
-for name in ["Edo", "Graphiti Eggplant", "Homemade Curd"]:
+for name in ["Edo", "Graphiti Eggplant"]:
     n = len([f for f in os.listdir(os.path.join(DATASET_FULL, name)) if not f.endswith(".txt")]) if os.path.isdir(os.path.join(DATASET_FULL, name)) else 0
     print(f"  {name}: {n} images")

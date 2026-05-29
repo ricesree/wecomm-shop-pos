@@ -3,7 +3,7 @@
 An AI-powered Point of Sale system that uses a live camera to automatically recognize vegetables and generate bills.
 
 ## Features
-- Real-time vegetable detection using YOLOv8s (15 categories)
+- Real-time vegetable detection using YOLOv8s (14 categories)
 - Live camera feed with bounding box overlay
 - 2-layer detection: YOLO identifies category → cashier selects specific product
 - Manual search and price lookup
@@ -11,10 +11,13 @@ An AI-powered Point of Sale system that uses a live camera to automatically reco
 - Hosted on Google Cloud Run (auto-deploy on git push)
 
 ## Detection Categories
-banana, beans, chilli, coconut, dasakai, eggplant, fruit, gourd, ladyfinger, ladystickers, leafy, onion, root, special, tomato
+banana, beans, chilli, coconut, dasakai, eggplant, fruit, gourd, ladyfinger, leafy, onion, root, special, tomato
+
+## Confusion Testing
+After training in Colab, run `confusion_matrix_eval.py` with the saved `best_new.pt` and extracted `YOLO_CATEGORIES` folder to generate `confusion_matrix.csv` and `confusion_report.json`. Use that report to tune cross-category lookalikes in the POS UI.
 
 ## Tech Stack
-- **Model**: YOLOv8s (Ultralytics / PyTorch) — trained on 10,000+ images across 15 classes
+- **Model**: YOLOv8s (Ultralytics / PyTorch) — trained on 10,000+ images across 14 classes
 - **API**: FastAPI on Google Cloud Run
 - **Frontend**: Vanilla JS + Canvas API
 - **Feedback Storage**: Google Cloud Storage
