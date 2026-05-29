@@ -456,7 +456,7 @@ main {
   </div>
 </main>
 
-<canvas id="captureCanvas" style="display:none" width="640" height="480"></canvas>
+<canvas id="captureCanvas" style="display:none" width="1280" height="720"></canvas>
 
 <script>
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -466,16 +466,37 @@ const PRODUCT_MAP = {
   "chilli":       ["FLORIDA LONG CHILLI", "Thai Chilli", "Bell Pepper"],
   "coconut":      ["Coconut"],
   "dasakai":      ["Dasakai"],
-  "eggplant":     ["Indian Eggplant", "Chinese Eggplant", "Chinese Green Eggplant", "Thai Eggplant"],
+  "eggplant":     ["Indian Eggplant", "Chinese Eggplant", "Chinese Green Eggplant", "Thai Eggplant", "Graphiti Eggplant"],
   "fruit":        ["Guava", "Papaya", "FRESH CHIKKU", "Lemon", "Chayote"],
   "gourd":        ["Pumpkin", "Snake Gourd", "Ridge Gourd", "Bitter Gourd", "Tindora", "Squash"],
   "ladyfinger":   ["Okra / Ladies Finger"],
-  "ladystickers": ["Lady Stickers"],
   "leafy":        ["Cabbage", "Cauliflower", "Mint", "Cilantro", "Curry Leaves", "Leaves", "Pan Leaves"],
   "onion":        ["Red Onions", "White Onions"],
-  "root":         ["Potato", "Sweet Potato", "Beetroot", "Radish", "Ginger", "Garlic"],
-  "special":      ["Boxed Sweets", "Home made snacks", "POLI", "Roti", "Mums", "Pearl", "Homemade Curd"],
+  "root":         ["Potato", "Sweet Potato", "Beetroot", "Radish", "Ginger", "Garlic", "Edo"],
+  "special":      ["Boxed Sweets", "POLI", "Roti", "Mums", "Pearl"],
   "tomato":       ["Tomato"],
+};
+
+const LOOKALIKE_CATEGORY_MAP = {
+  "chilli": ["gourd"],
+  "gourd": ["fruit", "chilli"],
+  "fruit": ["gourd"],
+  "root": ["fruit"],
+  "leafy": ["gourd"],
+  "eggplant": ["gourd"],
+  "beans": ["chilli", "gourd"],
+  "onion": ["root"],
+};
+
+const LOOKALIKE_PRODUCTS = {
+  "chilli": ["Tindora"],
+  "gourd": ["Chayote", "Thai Chilli"],
+  "fruit": ["Snake Gourd", "Ridge Gourd", "Tindora"],
+  "root": ["Chayote"],
+  "leafy": ["Ridge Gourd"],
+  "eggplant": ["Bitter Gourd", "Tindora"],
+  "beans": ["Thai Chilli", "Tindora"],
+  "onion": ["Potato", "Sweet Potato"],
 };
 
 const PRICES = {
@@ -484,26 +505,27 @@ const PRICES = {
   "FLORIDA LONG CHILLI":5.99,"Thai Chilli":6.99,"Bell Pepper":4.99,
   "Coconut":2.49,
   "Dasakai":3.99,
-  "Indian Eggplant":2.99,"Chinese Eggplant":3.49,"Chinese Green Eggplant":3.49,"Thai Eggplant":3.99,
+  "Indian Eggplant":2.99,"Chinese Eggplant":3.49,"Chinese Green Eggplant":3.49,"Thai Eggplant":3.99,"Graphiti Eggplant":3.99,
   "Guava":3.99,"Papaya":2.99,"FRESH CHIKKU":4.99,"Lemon":5.99,"Chayote":2.99,
   "Pumpkin":1.99,"Snake Gourd":3.49,"Ridge Gourd":3.49,"Bitter Gourd":3.99,"Tindora":4.99,"Squash":2.49,
   "Okra / Ladies Finger":4.99,
-  "Lady Stickers":5.49,
   "Cabbage":1.99,"Cauliflower":2.99,"Mint":1.49,"Cilantro":1.49,"Curry Leaves":1.99,"Leaves":1.49,"Pan Leaves":2.99,
   "Red Onions":1.99,"White Onions":1.99,
-  "Potato":1.49,"Sweet Potato":2.49,"Beetroot":2.99,"Radish":1.99,"Ginger":5.99,"Garlic":6.99,
-  "Boxed Sweets":8.99,"Home made snacks":5.99,"POLI":4.99,"Roti":3.99,"Mums":2.99,"Pearl":3.99,
+  "Potato":1.49,"Sweet Potato":2.49,"Beetroot":2.99,"Radish":1.99,"Ginger":5.99,"Garlic":6.99,"Edo":2.99,
+  "Boxed Sweets":8.99,"POLI":4.99,"Roti":3.99,"Mums":2.99,"Pearl":3.99,
   "Tomato":1.99,
-  "Homemade Curd":3.99,
 };
 
 // All individual items for search
 const ALL_ITEMS = Object.values(PRODUCT_MAP).flat();
+const ITEM_TO_CATEGORY = Object.fromEntries(
+  Object.entries(PRODUCT_MAP).flatMap(([cat, items]) => items.map(item => [item, cat]))
+);
 
 const CAT_LABELS = {
   "banana":"Banana","beans":"Beans / Pods","chilli":"Chilli","coconut":"Coconut",
   "dasakai":"Dasakai","eggplant":"Eggplant","fruit":"Fruit","gourd":"Gourd",
-  "ladyfinger":"Ladies Finger","ladystickers":"Lady Stickers","leafy":"Leafy Greens",
+  "ladyfinger":"Ladies Finger","leafy":"Leafy Greens",
   "onion":"Onion","root":"Root Vegetables","special":"Special Items","tomato":"Tomato",
 };
 
@@ -527,6 +549,8 @@ const overlay       = document.getElementById("overlay");
 const ctx           = overlay.getContext("2d");
 const captureCanvas = document.getElementById("captureCanvas");
 const captureCtx    = captureCanvas.getContext("2d");
+const CAPTURE_W     = 1280;
+const CAPTURE_H     = 720;
 
 // ── Camera ───────────────────────────────────────────────────────────────────
 async function loadCameras() {
@@ -582,7 +606,7 @@ function drawLoop() {
   const now = performance.now();
   if (now - lastFpsTime >= 1000) { fps = frameCount; frameCount = 0; lastFpsTime = now; document.getElementById("fpsTag").textContent = fps + " fps"; }
 
-  const sx = overlay.width/640, sy = overlay.height/480;
+  const sx = overlay.width/CAPTURE_W, sy = overlay.height/CAPTURE_H;
   allBoxes.forEach(det => {
     const col = colour(det.class);
     const {x1,y1,x2,y2} = det.bbox;
@@ -618,7 +642,7 @@ async function manualCapture() {
 
 async function runDetect() {
   try {
-    captureCtx.drawImage(video, 0, 0, 640, 480);
+    captureCtx.drawImage(video, 0, 0, CAPTURE_W, CAPTURE_H);
     const blob = await new Promise(r => captureCanvas.toBlob(r, "image/jpeg", 0.85));
     const form = new FormData(); form.append("file", blob, "frame.jpg");
     const res  = await fetch("/detect", {method:"POST", body:form});
@@ -699,14 +723,22 @@ function updateProductArea() {
 
   // render product buttons
   const items = PRODUCT_MAP[det.class] || [det.class];
-  grid.innerHTML = items.map((item, i) => {
+  const lookalikes = (LOOKALIKE_PRODUCTS[det.class] || []).filter(item => !items.includes(item));
+  const buttons = [
+    ...items.map(item => ({item, kind:"main"})),
+    ...lookalikes.map(item => ({item, kind:"lookalike"})),
+  ];
+  grid.innerHTML = buttons.map(({item, kind}) => {
     const price = PRICES[item];
     const priceStr = price != null ? `$${price.toFixed(2)}/kg` : "—";
-    const single = items.length === 1 ? " single" : "";
-    return `<button class="prod-btn${single}" onclick="addProduct('${item.replace(/'/g,"\\'")}','${det.class}')"
+    const single = buttons.length === 1 ? " single" : "";
+    const sub = kind === "lookalike" ? `<div class="prod-btn-price" style="color:#f59e0b">lookalike</div>` : "";
+    const itemCat = ITEM_TO_CATEGORY[item] || det.class;
+    return `<button class="prod-btn${single}" onclick="addProduct('${item.replace(/'/g,"\\'")}','${itemCat}')"
               style="border-color:${col}33">
               <div class="prod-btn-name">${item}</div>
               <div class="prod-btn-price" style="color:${col}">${priceStr}</div>
+              ${sub}
             </button>`;
   }).join("");
 }
@@ -718,7 +750,7 @@ function addProduct(name, category) {
   if (el) { el.style.background = "rgba(0,200,83,0.5)"; setTimeout(()=>el.style.background="",400); }
   // silently save confirmation
   const det = topUnique[selIdx];
-  if (det) sendConfirmation(det);
+  if (det) sendSelectionFeedback(det, category || det.class);
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────
@@ -829,19 +861,20 @@ function newOrder()  { closeBill(); clearCart(); }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
-async function sendConfirmation(det) {
+async function sendSelectionFeedback(det, correctCategory) {
   if (!det) return;
   try {
-    captureCtx.drawImage(video, 0, 0, 640, 480);
+    const isCorrection = correctCategory && correctCategory !== det.class;
+    captureCtx.drawImage(video, 0, 0, CAPTURE_W, CAPTURE_H);
     const blob = await new Promise(r => captureCanvas.toBlob(r,"image/jpeg",0.85));
     const form = new FormData();
-    form.append("file", blob, "confirm.jpg");
-    form.append("correct_label",   det.class);
+    form.append("file", blob, isCorrection ? "correction.jpg" : "confirm.jpg");
+    form.append("correct_label",   correctCategory || det.class);
     form.append("predicted_label", det.class);
-    form.append("feedback_type",   "confirmation");
+    form.append("feedback_type",   isCorrection ? "correction" : "confirmation");
     form.append("bbox_x1", det.bbox.x1); form.append("bbox_y1", det.bbox.y1);
     form.append("bbox_x2", det.bbox.x2); form.append("bbox_y2", det.bbox.y2);
-    form.append("img_width","640"); form.append("img_height","480");
+    form.append("img_width", String(CAPTURE_W)); form.append("img_height", String(CAPTURE_H));
     fetch("/feedback", {method:"POST", body:form});
   } catch(_) {}
 }
@@ -850,7 +883,7 @@ let learnImageBlob = null, learnPredicted = "";
 function openLearn() {
   const det = topUnique[selIdx];
   learnPredicted = det ? det.class : "unknown";
-  captureCtx.drawImage(video, 0, 0, 640, 480);
+  captureCtx.drawImage(video, 0, 0, CAPTURE_W, CAPTURE_H);
   captureCanvas.toBlob(blob => {
     learnImageBlob = blob;
     document.getElementById("learnPreview").src = URL.createObjectURL(blob);

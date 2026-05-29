@@ -19,10 +19,10 @@ MAX_PER_CLASS = 1500   # cap per class
 TRAIN_SPLIT  = 0.85
 random.seed(42)
 
-# 16 YOLO categories (curd added at end to keep existing indices 0-14 stable)
+# 14 YOLO categories
 YOLO_CLASSES = ["banana", "beans", "chilli", "coconut", "dasakai",
-                "eggplant", "fruit", "gourd", "ladyfinger", "ladystickers",
-                "leafy", "onion", "root", "special", "tomato"]
+                "eggplant", "fruit", "gourd", "ladyfinger", "leafy",
+                "onion", "root", "special", "tomato"]
 
 CLASS_TO_CATEGORY = {
     # BANANA
@@ -47,8 +47,6 @@ CLASS_TO_CATEGORY = {
     "FLAT VELOR":             "beans",
     # LADIES FINGER
     "Okra":                   "ladyfinger",
-    # LADY STICKERS
-    "Lady stickers":          "ladystickers",
     # LEAFY
     "Cabbage":                "leafy",
     "Cauliflower":            "leafy",
@@ -90,12 +88,10 @@ CLASS_TO_CATEGORY = {
     "Tomato":                 "tomato",
     # SPECIAL
     "Boxed Sweets":           "special",
-    "Home made snacks":       "special",
     "POLI":                   "special",
     "Roti":                   "special",
     "Mums":                   "special",
     "Pearl":                  "special",
-    "Homemade Curd":          "special",
 }
 
 

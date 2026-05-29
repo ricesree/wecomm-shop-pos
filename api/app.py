@@ -1,5 +1,5 @@
 """
-Vegetable Detection API — 15-class category model
+Vegetable Detection API — 14-class category model
 POST /detect           — send image, get top-4 category detections
 POST /feedback         — save correction image + correct label to GCS
 GET  /feedback/stats   — see how many corrections saved per class
@@ -25,6 +25,11 @@ CONF              = float(os.environ.get("CONF_THRESHOLD", "0.40"))
 IMGSZ             = int(os.environ.get("IMGSZ",            "640"))
 FEEDBACK_BUCKET   = os.environ.get("FEEDBACK_BUCKET",  "")
 THRESHOLDS_PATH   = os.environ.get("THRESHOLDS_PATH",  "/app/thresholds.json")
+DISABLED_CLASSES  = {
+    c.strip().lower()
+    for c in os.environ.get("DISABLED_CLASSES", "ladystickers").split(",")
+    if c.strip()
+}
 
 print(f"Loading model from {MODEL_PATH} ...")
 model = YOLO(MODEL_PATH)
@@ -72,6 +77,8 @@ async def detect(file: UploadFile = File(...)):
         cls_id     = int(box.cls[0])
         confidence = round(float(box.conf[0]), 4)
         name       = model.names[cls_id]
+        if name.lower() in DISABLED_CLASSES:
+            continue
         x1, y1, x2, y2 = [round(float(v), 1) for v in box.xyxy[0]]
         detections.append({
             "class":      name,
@@ -99,8 +106,8 @@ async def feedback(
     bbox_y1:         float      = Form(None),
     bbox_x2:         float      = Form(None),
     bbox_y2:         float      = Form(None),
-    img_width:       float      = Form(640),
-    img_height:      float      = Form(480),
+    img_width:       float      = Form(1280),
+    img_height:      float      = Form(720),
 ):
     if not FEEDBACK_BUCKET:
         raise HTTPException(503, "Feedback storage not configured. Set FEEDBACK_BUCKET env var.")

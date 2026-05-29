@@ -24,6 +24,7 @@ from ultralytics import YOLO
 MODEL_PATH   = r"c:\Users\sreet\Desktop\TUNE-DATAPOS\best_categories.pt"
 PRICES_PATH  = r"c:\Users\sreet\Desktop\TUNE-DATAPOS\prices.xlsx"
 CONF_THRESH  = 0.55
+IMGSZ        = 640
 CAMERA_ID    = 0
 STABLE_REQ   = 8
 
@@ -35,15 +36,14 @@ PRODUCT_MAP = {
     "chilli":      ["FLORIDA LONG CHILLI", "Thai Chilli", "Bell Pepper"],
     "coconut":     ["Coconut"],
     "dasakai":     ["Dasakai"],
-    "eggplant":    ["Indian Eggplant", "Chinese Eggplant", "Chinese Green Eggplant", "Thai Eggplant"],
+    "eggplant":    ["Indian Eggplant", "Chinese Eggplant", "Chinese Green Eggplant", "Thai Eggplant", "Graphiti Eggplant"],
     "fruit":       ["Guava", "Papaya", "FRESH CHIKKU", "Lemon", "Chayote"],
     "gourd":       ["Pumpkin", "Snake Gourd", "Ridge Gourd", "Bitter Gourd", "Tindora", "Squash"],
     "ladyfinger":  ["Okra / Ladies Finger"],
-    "ladystickers":["Lady Stickers"],
     "leafy":       ["Cabbage", "Cauliflower", "Mint", "Cilantro", "Curry Leaves", "Leaves", "Pan Leaves"],
     "onion":       ["Red Onions", "White Onions"],
-    "root":        ["Potato", "Sweet Potato", "Beetroot", "Radish", "Ginger", "Garlic"],
-    "special":     ["Boxed Sweets", "Home made snacks", "POLI", "Roti", "Mums", "Pearl", "Homemade Curd"],
+    "root":        ["Potato", "Sweet Potato", "Beetroot", "Radish", "Ginger", "Garlic", "Edo"],
+    "special":     ["Boxed Sweets", "POLI", "Roti", "Mums", "Pearl"],
     "tomato":      ["Tomato"],
 }
 
@@ -164,7 +164,7 @@ def main():
         if not ret:
             break
 
-        results    = model(frame, conf=CONF_THRESH, verbose=False)[0]
+        results    = model(frame, conf=CONF_THRESH, verbose=False, imgsz=IMGSZ)[0]
         detections = []
         best_cat   = None
         best_conf  = 0.0
