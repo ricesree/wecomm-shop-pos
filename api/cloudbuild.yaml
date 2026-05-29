@@ -1,29 +1,41 @@
 steps:
+  # Step 1 - Pull latest model from GCS
   - name: 'gcr.io/cloud-builders/gsutil'
-    args: ['cp', 'gs://vegdetect-feedback-1076778092661/models/best_new.pt', './api/best.pt']
+    args: ['cp', 'gs://vegdetect-pos-models/models/best_new.pt', './api/best_new.pt']
 
+  # Step 2 - Build Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/vegdetect/vegdetect-api', './api']
+    args:
+      - build
+      - -t
+      - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-api:latest
+      - ./api
 
+  # Step 3 - Push image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/vegdetect/vegdetect-api']
+    args:
+      - push
+      - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-api:latest
 
+  # Step 4 - Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
       - gcloud
       - run
       - deploy
       - vegdetect-api
-      - --image=gcr.io/vegdetect/vegdetect-api
+      - --image=us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-api:latest
       - --region=us-central1
       - --platform=managed
       - --allow-unauthenticated
-      - --memory=1Gi
-      - --cpu=2
-      - --set-env-vars=FEEDBACK_BUCKET=vegdetect-feedback-1076778092661
+      - --memory=4Gi
+      - --cpu=4
+      - --min-instances=1
+      - --max-instances=10
+      - --set-env-vars=FEEDBACK_BUCKET=vegdetect-pos-models
 
 images:
-  - 'gcr.io/vegdetect/vegdetect-api'
+  - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-api:latest
 
 options:
   logging: CLOUD_LOGGING_ONLY

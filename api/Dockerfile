@@ -22,13 +22,13 @@ RUN pip install --no-cache-dir \
     google-cloud-storage
 
 # Copy model, app, and web UI
-COPY best.pt             /app/best.pt
+COPY best_new.pt         /app/best_new.pt
 COPY app.py              /app/app.py
 COPY inference_filter.py /app/inference_filter.py
 COPY thresholds.json     /app/thresholds.json
 COPY static/             /app/static/
 
-ENV MODEL_PATH=/app/best.pt
+ENV MODEL_PATH=/app/best_new.pt
 ENV CONF_THRESHOLD=0.25
 ENV IMGSZ=640
 

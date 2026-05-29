@@ -45,10 +45,10 @@ header {
 
 main {
   flex: 1; display: grid; min-height: 0;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr;
 }
 @media (max-width: 767px) {
-  main { grid-template-columns: 1fr; grid-template-rows: 52dvh 1fr; }
+  main { grid-template-columns: 1fr; grid-template-rows: 1fr; }
 
   /* ── Compact header: single line, no wrapping ── */
   header       { padding: 6px 10px; gap: 6px; min-height: 0; }
@@ -72,7 +72,7 @@ main {
 
   /* ── POS panel: scrollable ── */
   #posSide     { overflow-y: auto; }
-  #addStrip    { padding: 8px 12px 6px; }
+  #addStrip    { padding: 224px 12px 6px; }
   .strip-label { font-size: 10px; margin-bottom: 5px; }
   #catBadge    { padding: 6px 10px; margin-bottom: 6px; }
   #catBadgeName  { font-size: 13px; }
@@ -109,17 +109,23 @@ main {
 }
 
 /* Camera side */
-#camSide { position: relative; background: #000; overflow: hidden; display: flex; flex-direction: column; }
-#video   { width: 100%; height: 100%; object-fit: cover; display: block; flex: 1; }
+#camSide {
+  position: fixed; top: 58px; left: 12px; z-index: 40;
+  width: min(260px, calc(100vw - 24px)); aspect-ratio: 4 / 3;
+  background: #000; overflow: hidden; display: flex; flex-direction: column;
+  border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.45);
+}
+#video   { width: 100%; height: 100%; object-fit: contain; display: block; flex: 1; background:#000; }
 #overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
 #camBottom {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: linear-gradient(to top, rgba(0,0,0,.88), transparent);
-  padding: 60px 14px 14px;
+  padding: 38px 8px 8px;
   display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
 }
-#camCards { display: flex; gap: 8px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+#camCards { display: none; gap: 8px; flex: 1; overflow-x: auto; scrollbar-width: none; }
 #camCards::-webkit-scrollbar { display: none; }
 .cam-card {
   flex-shrink: 0; min-width: 76px;
@@ -138,31 +144,31 @@ main {
 .cam-card.empty    { pointer-events: none; opacity: .3; }
 
 #captureBtn {
-  width: 62px; height: 62px; flex-shrink: 0;
+  width: 42px; height: 42px; flex-shrink: 0;
   border-radius: 50%; background: #fff;
-  border: 4px solid #555;
-  box-shadow: 0 0 0 3px #000, 0 0 0 5px #fff;
-  cursor: pointer; font-size: 24px;
+  border: 3px solid #555;
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px #fff;
+  cursor: pointer; font-size: 18px;
   display: flex; align-items: center; justify-content: center;
   transition: transform .1s; -webkit-tap-highlight-color: transparent;
 }
 #captureBtn:active { transform: scale(.88); }
 #captureBtn.flash  { background: var(--green); }
 #fpsTag {
-  position: absolute; top: 12px; right: 12px;
+  position: absolute; top: 8px; right: 8px;
   background: rgba(0,0,0,.5); color: #aaa;
   font-size: 11px; padding: 3px 8px; border-radius: 10px;
 }
 
 /* POS side */
 #posSide {
-  background: var(--panel); border-left: 1px solid var(--border);
+  background: var(--panel);
   display: flex; flex-direction: column; overflow: hidden;
 }
 
 /* Add strip */
 #addStrip {
-  padding: 12px 14px 10px;
+  padding: 12px 14px 10px 288px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -183,6 +189,23 @@ main {
   padding: 4px 8px; cursor: pointer; font-weight: 700;
 }
 #catBadgeWrong:disabled { opacity: .3; cursor: default; border-color: var(--border); color: var(--muted); }
+
+/* Persistent detected class list */
+#detectedList {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 7px; margin-bottom: 8px;
+}
+.det-option {
+  min-height: 54px; padding: 8px 10px;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 8px; cursor: pointer; text-align: left;
+  transition: border-color .12s, background .12s, transform .08s;
+}
+.det-option:active { transform: scale(.97); }
+.det-option.active { border-color: var(--col); background: color-mix(in srgb, var(--col) 18%, var(--card)); }
+.det-option-cat { font-size: 10px; font-weight: 800; color: var(--col); text-transform: uppercase; }
+.det-option-name { font-size: 13px; font-weight: 800; color: #fff; margin-top: 3px; line-height: 1.25; }
+.det-option-conf { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
 /* Product grid */
 #productGrid {
@@ -419,6 +442,7 @@ main {
       </div>
 
       <!-- Product buttons — shown when category is selected -->
+      <div id="detectedList"></div>
       <div id="productGrid"></div>
 
       <!-- Waiting state -->
@@ -470,11 +494,10 @@ const PRODUCT_MAP = {
   "fruit":        ["Guava", "Papaya", "FRESH CHIKKU", "Lemon", "Chayote"],
   "gourd":        ["Pumpkin", "Snake Gourd", "Ridge Gourd", "Bitter Gourd", "Tindora", "Squash"],
   "ladyfinger":   ["Okra / Ladies Finger"],
-  "ladystickers": ["Lady Stickers"],
   "leafy":        ["Cabbage", "Cauliflower", "Mint", "Cilantro", "Curry Leaves", "Leaves", "Pan Leaves"],
   "onion":        ["Red Onions", "White Onions"],
   "root":         ["Potato", "Sweet Potato", "Beetroot", "Radish", "Ginger", "Garlic"],
-  "special":      ["Boxed Sweets", "Home made snacks", "POLI", "Roti", "Mums", "Pearl", "Homemade Curd"],
+  "special":      ["Boxed Sweets", "POLI", "Roti", "Mums", "Pearl"],
   "tomato":       ["Tomato"],
 };
 
@@ -488,13 +511,11 @@ const PRICES = {
   "Guava":3.99,"Papaya":2.99,"FRESH CHIKKU":4.99,"Lemon":5.99,"Chayote":2.99,
   "Pumpkin":1.99,"Snake Gourd":3.49,"Ridge Gourd":3.49,"Bitter Gourd":3.99,"Tindora":4.99,"Squash":2.49,
   "Okra / Ladies Finger":4.99,
-  "Lady Stickers":5.49,
   "Cabbage":1.99,"Cauliflower":2.99,"Mint":1.49,"Cilantro":1.49,"Curry Leaves":1.99,"Leaves":1.49,"Pan Leaves":2.99,
   "Red Onions":1.99,"White Onions":1.99,
   "Potato":1.49,"Sweet Potato":2.49,"Beetroot":2.99,"Radish":1.99,"Ginger":5.99,"Garlic":6.99,
-  "Boxed Sweets":8.99,"Home made snacks":5.99,"POLI":4.99,"Roti":3.99,"Mums":2.99,"Pearl":3.99,
+  "Boxed Sweets":8.99,"POLI":4.99,"Roti":3.99,"Mums":2.99,"Pearl":3.99,
   "Tomato":1.99,
-  "Homemade Curd":3.99,
 };
 
 // All individual items for search
@@ -503,7 +524,7 @@ const ALL_ITEMS = Object.values(PRODUCT_MAP).flat();
 const CAT_LABELS = {
   "banana":"Banana","beans":"Beans / Pods","chilli":"Chilli","coconut":"Coconut",
   "dasakai":"Dasakai","eggplant":"Eggplant","fruit":"Fruit","gourd":"Gourd",
-  "ladyfinger":"Ladies Finger","ladystickers":"Lady Stickers","leafy":"Leafy Greens",
+  "ladyfinger":"Ladies Finger","leafy":"Leafy Greens",
   "onion":"Onion","root":"Root Vegetables","special":"Special Items","tomato":"Tomato",
 };
 
@@ -622,19 +643,51 @@ async function runDetect() {
     const blob = await new Promise(r => captureCanvas.toBlob(r, "image/jpeg", 0.85));
     const form = new FormData(); form.append("file", blob, "frame.jpg");
     const res  = await fetch("/detect", {method:"POST", body:form});
+    if (!res.ok) {
+      const msg = await res.text();
+      throw new Error(msg || `Detection failed: ${res.status}`);
+    }
     const data = await res.json();
     allBoxes  = data.detections || [];
-    topUnique = dedup4(allBoxes);
-    selIdx    = 0;
+    mergeDetections(allBoxes);
+    if (topUnique.length && selIdx >= topUnique.length) selIdx = 0;
     updateCamCards();
     updateProductArea();
-  } catch(_) {}
+  } catch(e) {
+    const waitMsg = document.getElementById("waitMsg");
+    if (waitMsg && !topUnique.length) {
+      waitMsg.style.display = "block";
+      waitMsg.textContent = "Detection error. Check /health and server logs.";
+    }
+    console.error("Detection error:", e);
+  }
 }
 
-function dedup4(dets) {
+function dedupClasses(dets) {
   const best = {};
   dets.forEach(d => { if (!best[d.class] || d.confidence > best[d.class].confidence) best[d.class] = d; });
-  return Object.values(best).sort((a,b) => b.confidence - a.confidence).slice(0,4);
+  return Object.values(best).sort((a,b) => b.confidence - a.confidence);
+}
+
+function mergeDetections(dets) {
+  const current = dedupClasses(dets);
+  let shouldSelectTop = !topUnique.length;
+  current.forEach(det => {
+    const existing = topUnique.find(d => d.class === det.class);
+    if (!existing) {
+      topUnique.push({...det, seenAt: Date.now()});
+      shouldSelectTop = true;
+    } else if (det.confidence > existing.confidence) {
+      Object.assign(existing, det, {seenAt: Date.now()});
+    } else {
+      existing.seenAt = Date.now();
+    }
+  });
+  const selectedClass = (topUnique[selIdx] || {}).class;
+  topUnique.sort((a,b) => b.confidence - a.confidence);
+  const selectedIndex = topUnique.findIndex(d => d.class === selectedClass);
+  if (selectedIndex >= 0) selIdx = selectedIndex;
+  else if (shouldSelectTop) selIdx = 0;
 }
 
 function pickCard(i) {
@@ -644,12 +697,48 @@ function pickCard(i) {
   updateProductArea();
   // flash card
   const el = document.getElementById("cc"+i);
+  if (!el) return;
   const prev = el.style.background;
   el.style.background = "rgba(0,200,83,0.4)";
   setTimeout(() => el.style.background = prev, 350);
 }
 
 function updateCamCards() {
+  const cards = document.getElementById("camCards");
+  const list = document.getElementById("detectedList");
+
+  if (!topUnique.length) {
+    cards.innerHTML = `<div class="cam-card empty"><div class="cc-cat">WAITING</div><div class="cc-name">No item</div><div class="cc-conf">--</div></div>`;
+    list.innerHTML = "";
+    return;
+  }
+
+  const rows = topUnique.map((det, i) => {
+    const col = colour(det.class);
+    const items = PRODUCT_MAP[det.class] || [];
+    const label = items.length === 1 ? items[0] : (CAT_LABELS[det.class] || det.class);
+    const active = i === selIdx ? " active" : "";
+    const conf = Math.round(det.confidence * 100) + "%";
+    return {det, i, col, label, active, conf};
+  });
+
+  cards.innerHTML = rows.slice(0, 5).map(r => `
+    <div class="cam-card${r.active}" onclick="pickCard(${r.i})" style="--col:${r.col}">
+      <div class="cc-cat">${r.det.class.toUpperCase()}</div>
+      <div class="cc-name">${r.label}</div>
+      <div class="cc-conf">${r.conf}</div>
+    </div>
+  `).join("");
+
+  list.innerHTML = rows.map(r => `
+    <button class="det-option${r.active}" onclick="pickCard(${r.i})" style="--col:${r.col}">
+      <div class="det-option-cat">${r.det.class}</div>
+      <div class="det-option-name">${r.label}</div>
+      <div class="det-option-conf">${r.conf} best confidence</div>
+    </button>
+  `).join("");
+  return;
+
   for (let i = 0; i < 4; i++) {
     const el  = document.getElementById("cc"+i);
     const det = topUnique[i];

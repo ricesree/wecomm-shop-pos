@@ -1,5 +1,5 @@
 """
-Vegetable Detection API — 15-class category model
+Vegetable Detection API — 14-class category model
 POST /detect           — send image, get top-4 category detections
 POST /feedback         — save correction image + correct label to GCS
 GET  /feedback/stats   — see how many corrections saved per class
@@ -15,16 +15,23 @@ from ultralytics import YOLO
 from inference_filter import load_thresholds, apply_class_thresholds, get_base_conf
 
 app = FastAPI(title="Swadesh Food Mart — POS Detection API", version="3.0")
-app.mount("/static", StaticFiles(directory="/app/static"), name="static")
+STATIC_DIR = "/app/static" if os.path.exists("/app/static") else "static"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/")
-def root(): return FileResponse("/app/static/index.html")
+def root(): return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
-MODEL_PATH        = os.environ.get("MODEL_PATH",        "/app/best.pt")
+MODEL_PATH        = os.environ.get(
+    "MODEL_PATH",
+    "/app/best_new.pt" if os.path.exists("/app/best_new.pt") else "best_new.pt"
+)
 CONF              = float(os.environ.get("CONF_THRESHOLD", "0.40"))
 IMGSZ             = int(os.environ.get("IMGSZ",            "640"))
 FEEDBACK_BUCKET   = os.environ.get("FEEDBACK_BUCKET",  "")
-THRESHOLDS_PATH   = os.environ.get("THRESHOLDS_PATH",  "/app/thresholds.json")
+THRESHOLDS_PATH   = os.environ.get(
+    "THRESHOLDS_PATH",
+    "/app/thresholds.json" if os.path.exists("/app/thresholds.json") else "thresholds.json"
+)
 
 print(f"Loading model from {MODEL_PATH} ...")
 model = YOLO(MODEL_PATH)

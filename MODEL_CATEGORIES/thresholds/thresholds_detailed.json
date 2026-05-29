@@ -1,0 +1,86 @@
+{
+  "banana": {
+    "threshold": 0.61,
+    "precision": 1.0,
+    "recall": 0.9821,
+    "f1": 0.991
+  },
+  "beans": {
+    "threshold": 0.23,
+    "precision": 0.8727,
+    "recall": 0.8824,
+    "f1": 0.8775
+  },
+  "chilli": {
+    "threshold": 0.49,
+    "precision": 0.9286,
+    "recall": 0.901,
+    "f1": 0.9146
+  },
+  "coconut": {
+    "threshold": 0.25,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "dasakai": {
+    "threshold": 0.45,
+    "precision": 0.9852,
+    "recall": 0.9709,
+    "f1": 0.978
+  },
+  "eggplant": {
+    "threshold": 0.23,
+    "precision": 0.9208,
+    "recall": 0.9208,
+    "f1": 0.9208
+  },
+  "fruit": {
+    "threshold": 0.29,
+    "precision": 0.9597,
+    "recall": 0.9444,
+    "f1": 0.952
+  },
+  "gourd": {
+    "threshold": 0.37,
+    "precision": 0.9622,
+    "recall": 0.955,
+    "f1": 0.9586
+  },
+  "ladyfinger": {
+    "threshold": 0.41,
+    "precision": 0.8984,
+    "recall": 0.8439,
+    "f1": 0.8703
+  },
+  "leafy": {
+    "threshold": 0.25,
+    "precision": 1.0,
+    "recall": 0.9884,
+    "f1": 0.9942
+  },
+  "onion": {
+    "threshold": 0.19,
+    "precision": 0.9587,
+    "recall": 0.9469,
+    "f1": 0.9528
+  },
+  "root": {
+    "threshold": 0.35,
+    "precision": 0.9248,
+    "recall": 0.935,
+    "f1": 0.9299
+  },
+  "special": {
+    "threshold": 0.09,
+    "precision": 0.9911,
+    "recall": 0.9823,
+    "f1": 0.9867
+  },
+  "tomato": {
+    "threshold": 0.43,
+    "precision": 0.959,
+    "recall": 0.9707,
+    "f1": 0.9648
+  }
+}
