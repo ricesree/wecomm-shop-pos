@@ -15,9 +15,19 @@ Setup:
 """
 
 import cv2, os
+import time
 import numpy as np
 import openpyxl
 from ultralytics import YOLO
+
+# Mouse click state shared with main loop
+CLICK_INFO = {"cam_w": None, "panel_w": None, "click": None}
+
+
+def mouse_callback(event, x, y, flags, param):
+    # store left-button clicks
+    if event == cv2.EVENT_LBUTTONDOWN:
+        CLICK_INFO["click"] = (x, y)
 
 # --- Config ---------------------------------------------------------------
 
@@ -27,6 +37,7 @@ CONF_THRESH  = 0.55
 IMGSZ        = 640
 CAMERA_ID    = 0
 STABLE_REQ   = 8
+DETECTION_DISPLAY_SECONDS = float(os.environ.get("DETECTION_DISPLAY_SECONDS", "5"))
 
 # --- Product Map: YOLO category → sellable items -------------------------
 
@@ -81,7 +92,7 @@ def draw_camera_view(frame, detections):
     return vis
 
 
-def draw_panel(detected_category, options, selected_idx, cart, prices, show_suboptions):
+def draw_panel(detected_category, options, selected_idx, cart, prices, show_suboptions, running=True):
     W, H = 460, 720
     panel = np.full((H, W, 3), 25, dtype=np.uint8)
 
@@ -110,13 +121,55 @@ def draw_panel(detected_category, options, selected_idx, cart, prices, show_subo
             cv2.rectangle(panel, (12, H - 170), (W - 12, H - 138), (10, 170, 70), -1)
             cv2.putText(panel, "  SPACE = Add to cart", (18, H - 148),
                         FONT, 0.58, (255, 255, 255), 1)
+            cv2.putText(panel, "  C = Clear detection", (18, H - 128),
+                        FONT, 0.5, (200, 200, 200), 1)
         elif selected_idx is not None and not show_suboptions:
             cv2.rectangle(panel, (12, H - 170), (W - 12, H - 138), (10, 170, 70), -1)
             cv2.putText(panel, "  Press item to expand variants", (18, H - 148),
                         FONT, 0.52, (255, 255, 255), 1)
+            cv2.putText(panel, "  C = Clear detection", (18, H - 128),
+                        FONT, 0.5, (200, 200, 200), 1)
     else:
-        cv2.putText(panel, "Waiting for", (30, 80),  FONT, 0.9, (120, 120, 120), 2)
-        cv2.putText(panel, "detection...", (30, 120), FONT, 0.9, (120, 120, 120), 2)
+        if running:
+            cv2.putText(panel, "Waiting for", (30, 80),  FONT, 0.9, (120, 120, 120), 2)
+            cv2.putText(panel, "detection...", (30, 120), FONT, 0.9, (120, 120, 120), 2)
+        else:
+            cv2.putText(panel, "DETECTION PAUSED", (30, 80),  FONT, 0.8, (200, 120, 120), 2)
+            cv2.putText(panel, "Press S to Start, T to Stop", (30, 120), FONT, 0.6, (180, 180, 180), 1)
+
+    # -- control buttons (Start / Stop / Clear) --
+    gap = 8
+    btn_w = 110
+    btn_h = 36
+    y1 = 10
+    y2 = y1 + btn_h
+    x2_clear = W - 12
+    x1_clear = x2_clear - btn_w
+    x2_stop = x1_clear - gap
+    x1_stop = x2_stop - btn_w
+    x2_start = x1_stop - gap
+    x1_start = x2_start - btn_w
+
+    # start button
+    start_bg = (20, 160, 20) if not running else (80, 200, 80)
+    cv2.rectangle(panel, (x1_start, y1), (x2_start, y2), start_bg, -1)
+    cv2.putText(panel, " START ", (x1_start + 8, y1 + 24), FONT, 0.6, (255, 255, 255), 2)
+
+    # stop button
+    stop_bg = (160, 40, 40) if running else (90, 90, 90)
+    cv2.rectangle(panel, (x1_stop, y1), (x2_stop, y2), stop_bg, -1)
+    cv2.putText(panel, " STOP ", (x1_stop + 12, y1 + 24), FONT, 0.6, (255, 255, 255), 2)
+
+    # clear button
+    clear_bg = (10, 110, 200)
+    cv2.rectangle(panel, (x1_clear, y1), (x2_clear, y2), clear_bg, -1)
+    cv2.putText(panel, " CLEAR ", (x1_clear + 10, y1 + 24), FONT, 0.6, (255, 255, 255), 2)
+
+    buttons = {
+        "start": (x1_start, y1, x2_start, y2),
+        "stop": (x1_stop, y1, x2_stop, y2),
+        "clear": (x1_clear, y1, x2_clear, y2),
+    }
 
     # -- cart --
     cv2.line(panel, (0, H - 175), (W, H - 175), (60, 60, 60), 1)
@@ -136,7 +189,7 @@ def draw_panel(detected_category, options, selected_idx, cart, prices, show_subo
     cv2.putText(panel, f"  TOTAL: ${total:.2f}", (12, H - 10),
                 FONT, 0.75, (0, 220, 120), 2)
 
-    return panel
+    return panel, buttons
 
 
 # --- Main -----------------------------------------------------------------
@@ -160,68 +213,119 @@ def main():
     options           = []
     detail_options    = []
     show_suboptions   = False
+    detected_shown_at = None
     selected_idx      = None
     cart              = []   # list of (item_name, price)
     stable_frames     = 0
     last_cat          = None
+    running           = False  # detection active when True (press S to start)
 
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        results    = model(frame, conf=CONF_THRESH, verbose=False, imgsz=IMGSZ)[0]
         detections = []
         best_cat   = None
         best_conf  = 0.0
 
-        for box in results.boxes:
-            cls  = int(box.cls[0])
-            conf = float(box.conf[0])
-            cat  = model.names[cls]
-            x1, y1, x2, y2 = map(int, box.xyxy[0])
-            detections.append({"box": (x1, y1, x2, y2), "category": cat, "conf": conf})
-            if conf > best_conf:
-                best_conf = conf; best_cat = cat
+        if running:
+            results    = model(frame, conf=CONF_THRESH, verbose=False, imgsz=IMGSZ)[0]
+            for box in results.boxes:
+                cls  = int(box.cls[0])
+                conf = float(box.conf[0])
+                cat  = model.names[cls]
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                detections.append({"box": (x1, y1, x2, y2), "category": cat, "conf": conf})
+                if conf > best_conf:
+                    best_conf = conf; best_cat = cat
 
-        if best_cat == last_cat:
-            stable_frames += 1
-        else:
-            stable_frames = 0
-            last_cat      = best_cat
-            selected_idx  = None
+            if best_cat == last_cat:
+                stable_frames += 1
+            else:
+                stable_frames = 0
+                last_cat      = best_cat
+                selected_idx  = None
 
-        if stable_frames >= STABLE_REQ and best_cat is not None:
-            if best_cat != detected_category:
-                detected_category = best_cat
-                detail_options = PRODUCT_MAP.get(best_cat, [best_cat.title()])
-                if len(detail_options) > 1:
-                    options = [best_cat.title()]
+            if stable_frames >= STABLE_REQ and best_cat is not None:
+                if best_cat != detected_category:
+                    detected_category = best_cat
+                    detail_options = PRODUCT_MAP.get(best_cat, [best_cat.title()])
+                    if len(detail_options) > 1:
+                        options = [best_cat.title()]
+                        show_suboptions = False
+                    else:
+                        options = detail_options
+                        show_suboptions = True
+                    selected_idx = 0
+                    detected_shown_at = time.time()
+                    print(f"\nDetected: {best_cat}  ({best_conf:.2f})")
+                    if show_suboptions:
+                        for i, o in enumerate(options, 1):
+                            p = prices.get(o)
+                            print(f"  [{i}] {o}  {'$'+str(p)+'/kg' if p else ''}")
+                    else:
+                        print(f"  [{1}] {options[0]}")
+                        print("  Press the item to expand its variants")
+
+        # Auto-hide detection after configured seconds
+        if detected_shown_at is not None:
+            try:
+                if time.time() - detected_shown_at >= DETECTION_DISPLAY_SECONDS:
+                    detected_category = None
+                    options = []
+                    detail_options = []
                     show_suboptions = False
-                else:
-                    options = detail_options
-                    show_suboptions = True
-                selected_idx = 0
-                print(f"\nDetected: {best_cat}  ({best_conf:.2f})")
-                if show_suboptions:
-                    for i, o in enumerate(options, 1):
-                        p = prices.get(o)
-                        print(f"  [{i}] {o}  {'$'+str(p)+'/kg' if p else ''}")
-                else:
-                    print(f"  [{1}] {options[0]}")
-                    print("  Press the item to expand its variants")
+                    selected_idx = None
+                    last_cat = None
+                    stable_frames = 0
+                    detected_shown_at = None
+            except Exception:
+                # safe-guard: ignore timing errors
+                detected_shown_at = None
 
         cam_view = draw_camera_view(frame, detections)
-        panel    = draw_panel(detected_category, options, selected_idx, cart, prices, show_suboptions)
+        panel, buttons = draw_panel(detected_category, options, selected_idx, cart, prices, show_suboptions, running)
 
         ph  = panel.shape[0]
         cw  = int(frame.shape[1] * (ph / frame.shape[0]))
         cam = cv2.resize(cam_view, (cw, ph))
         display = np.hstack([cam, panel])
 
-        cv2.imshow("POS Vegetable Detection  |  Q=quit", display)
+        winname = "POS Vegetable Detection  |  Q=quit"
+        cv2.namedWindow(winname)
+        cv2.setMouseCallback(winname, mouse_callback)
+        cv2.imshow(winname, display)
+
+        # publish current sizes for click coordinate translation
+        CLICK_INFO["cam_w"] = cam.shape[1]
+        CLICK_INFO["panel_w"] = panel.shape[1]
 
         key = cv2.waitKey(1) & 0xFF
+
+        # Start detection: clears screen and begins inference
+        if key in (ord('s'), ord('S')):
+            if not running:
+                running = True
+                detected_category = None
+                options = []
+                detail_options = []
+                show_suboptions = False
+                selected_idx = None
+                last_cat = None
+                stable_frames = 0
+                detected_shown_at = None
+                print("Detection STARTED; screen cleared")
+            else:
+                print("Detection already running")
+
+        # Stop detection: pause inference (display may remain until cleared)
+        if key in (ord('t'), ord('T')):
+            if running:
+                running = False
+                print("Detection STOPPED")
+            else:
+                print("Detection already stopped")
 
         if detected_category and options:
             for i in range(min(9, len(options))):
@@ -230,9 +334,11 @@ def main():
                         options = detail_options
                         show_suboptions = True
                         selected_idx = 0
+                        detected_shown_at = time.time()
                         print(f"  Expanded {detected_category} to show variants")
                     else:
                         selected_idx = i
+                        detected_shown_at = time.time()
                         print(f"  Selected: {options[i]}")
 
         if key == ord(' ') and selected_idx is not None and show_suboptions:
@@ -244,9 +350,70 @@ def main():
             options           = []
             detail_options    = []
             show_suboptions   = False
+            detected_shown_at = None
             selected_idx      = None
             last_cat          = None
             stable_frames     = 0
+
+        # Clear detection immediately (restart detection flow)
+        if key in (ord('c'), ord('C')):
+            detected_category = None
+            options = []
+            detail_options = []
+            show_suboptions = False
+            selected_idx = None
+            last_cat = None
+            stable_frames = 0
+            detected_shown_at = None
+            print("Cleared detection; resuming live detection")
+
+        # Handle mouse clicks on the panel (if any)
+        click = CLICK_INFO.get("click")
+        if click is not None:
+            cx, cy = click
+            CLICK_INFO["click"] = None
+            cam_w = CLICK_INFO.get("cam_w") or 0
+            # only handle clicks in the panel area
+            if cx >= cam_w:
+                px = cx - cam_w
+                py = cy
+                # check each button rect
+                def inside(r, x, y):
+                    x1, y1, x2, y2 = r
+                    return x >= x1 and x <= x2 and y >= y1 and y <= y2
+
+                if inside(buttons["start"], px, py):
+                    if not running:
+                        running = True
+                        detected_category = None
+                        options = []
+                        detail_options = []
+                        show_suboptions = False
+                        selected_idx = None
+                        last_cat = None
+                        stable_frames = 0
+                        detected_shown_at = None
+                        print("Detection STARTED via UI; screen cleared")
+                    else:
+                        print("Detection already running")
+
+                elif inside(buttons["stop"], px, py):
+                    if running:
+                        running = False
+                        print("Detection STOPPED via UI")
+                    else:
+                        print("Detection already stopped")
+
+                elif inside(buttons["clear"], px, py):
+                    detected_category = None
+                    options = []
+                    detail_options = []
+                    show_suboptions = False
+                    selected_idx = None
+                    last_cat = None
+                    stable_frames = 0
+                    detected_shown_at = None
+                    print("Cleared detection via UI; resuming live detection")
 
         if key in (ord('q'), ord('Q')):
             break
