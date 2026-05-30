@@ -81,7 +81,7 @@ def draw_camera_view(frame, detections):
     return vis
 
 
-def draw_panel(detected_category, options, selected_idx, cart, prices):
+def draw_panel(detected_category, options, selected_idx, cart, prices, show_suboptions):
     W, H = 460, 720
     panel = np.full((H, W, 3), 25, dtype=np.uint8)
 
@@ -106,10 +106,14 @@ def draw_panel(detected_category, options, selected_idx, cart, prices):
                 (tw, _), _ = cv2.getTextSize(f" [{i+1}]  {opt}", FONT, 0.58, 2)
                 cv2.putText(panel, price_str, (18 + tw, y), FONT, 0.55, (100, 220, 100), 1)
 
-        if selected_idx is not None:
+        if selected_idx is not None and show_suboptions:
             cv2.rectangle(panel, (12, H - 170), (W - 12, H - 138), (10, 170, 70), -1)
             cv2.putText(panel, "  SPACE = Add to cart", (18, H - 148),
                         FONT, 0.58, (255, 255, 255), 1)
+        elif selected_idx is not None and not show_suboptions:
+            cv2.rectangle(panel, (12, H - 170), (W - 12, H - 138), (10, 170, 70), -1)
+            cv2.putText(panel, "  Press item to expand variants", (18, H - 148),
+                        FONT, 0.52, (255, 255, 255), 1)
     else:
         cv2.putText(panel, "Waiting for", (30, 80),  FONT, 0.9, (120, 120, 120), 2)
         cv2.putText(panel, "detection...", (30, 120), FONT, 0.9, (120, 120, 120), 2)
@@ -154,6 +158,8 @@ def main():
 
     detected_category = None
     options           = []
+    detail_options    = []
+    show_suboptions   = False
     selected_idx      = None
     cart              = []   # list of (item_name, price)
     stable_frames     = 0
@@ -188,15 +194,25 @@ def main():
         if stable_frames >= STABLE_REQ and best_cat is not None:
             if best_cat != detected_category:
                 detected_category = best_cat
-                options = PRODUCT_MAP.get(best_cat, [best_cat.title()])
-                selected_idx = 0 if len(options) == 1 else None
+                detail_options = PRODUCT_MAP.get(best_cat, [best_cat.title()])
+                if len(detail_options) > 1:
+                    options = [best_cat.title()]
+                    show_suboptions = False
+                else:
+                    options = detail_options
+                    show_suboptions = True
+                selected_idx = 0
                 print(f"\nDetected: {best_cat}  ({best_conf:.2f})")
-                for i, o in enumerate(options, 1):
-                    p = prices.get(o)
-                    print(f"  [{i}] {o}  {'$'+str(p)+'/kg' if p else ''}")
+                if show_suboptions:
+                    for i, o in enumerate(options, 1):
+                        p = prices.get(o)
+                        print(f"  [{i}] {o}  {'$'+str(p)+'/kg' if p else ''}")
+                else:
+                    print(f"  [{1}] {options[0]}")
+                    print("  Press the item to expand its variants")
 
         cam_view = draw_camera_view(frame, detections)
-        panel    = draw_panel(detected_category, options, selected_idx, cart, prices)
+        panel    = draw_panel(detected_category, options, selected_idx, cart, prices, show_suboptions)
 
         ph  = panel.shape[0]
         cw  = int(frame.shape[1] * (ph / frame.shape[0]))
@@ -210,16 +226,24 @@ def main():
         if detected_category and options:
             for i in range(min(9, len(options))):
                 if key == ord(str(i + 1)):
-                    selected_idx = i
-                    print(f"  Selected: {options[i]}")
+                    if len(detail_options) > 1 and not show_suboptions and options[i].lower() == detected_category:
+                        options = detail_options
+                        show_suboptions = True
+                        selected_idx = 0
+                        print(f"  Expanded {detected_category} to show variants")
+                    else:
+                        selected_idx = i
+                        print(f"  Selected: {options[i]}")
 
-        if key == ord(' ') and selected_idx is not None:
+        if key == ord(' ') and selected_idx is not None and show_suboptions:
             chosen = options[selected_idx]
             price  = prices.get(chosen)
             cart.append((chosen, price))
             print(f"  CONFIRMED: {chosen}  ${price:.2f}/kg  |  Total: ${sum(p for _,p in cart if p):.2f}")
             detected_category = None
             options           = []
+            detail_options    = []
+            show_suboptions   = False
             selected_idx      = None
             last_cat          = None
             stable_frames     = 0
