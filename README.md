@@ -26,14 +26,42 @@ After training in Colab, run `confusion_matrix_eval.py` with the saved `best_new
 
 ## Project Structure
 ```
-api/              — FastAPI app, Dockerfile, Cloud Build config
+offline/          — local tools, training scripts, and POS demo
+api/              — production FastAPI service and real APIs
+  learning_api/   — experimental YOLO learning API
+tests/            — placeholder for future automated tests
 DATASET/          — Original training images (organized by product)
 MANUAL_LABELS/    — YOLO bounding box labels per product
-prepare_categories.py  — Builds YOLO_CATEGORIES dataset from raw images
-colab_train_categories.py  — Training script (run on Google Colab)
-detect_pos.py     — Local POS detection (OpenCV, for offline use)
-label.py / label_new.py  — Manual bounding box labeling tools
-prices.xlsx       — Product prices
+```
+
+Important files:
+```
+offline/detect_pos.py
+offline/prepare_categories.py
+offline/colab_train_categories.py
+offline/label_new.py
+offline/build_feedback_dataset.py
+offline/merge_new_data.py
+offline/confusion_matrix_eval.py
+api/app.py
+api/learning_api/app.py
+```
+
+## How to run locally
+- Local POS demo:
+```bash
+cd offline
+python detect_pos.py
+```
+- Production-like API service:
+```bash
+cd api
+uvicorn app:app --host 0.0.0.0 --port 8080
+```
+- Experimental learning API:
+```bash
+cd api/learning_api
+uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
 ## Deployment

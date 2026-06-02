@@ -8,11 +8,12 @@ GET  /health           — health check
 
 import os, io, json, time, cv2, numpy as np
 from datetime import datetime, timezone
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from ultralytics import YOLO
 from inference_filter import load_thresholds, apply_class_thresholds, get_base_conf
+import base64
 
 app = FastAPI(title="Swadesh Food Mart — POS Detection API", version="3.0")
 STATIC_DIR = "/app/static" if os.path.exists("/app/static") else "static"
@@ -60,20 +61,38 @@ def health():
     }
 
 
-@app.post("/detect")
-async def detect(file: UploadFile = File(...)):
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(400, "File must be an image.")
-
-    contents = await file.read()
+def _decode_image_bytes(contents: bytes):
     img = cv2.imdecode(np.frombuffer(contents, np.uint8), cv2.IMREAD_COLOR)
     if img is None:
         raise HTTPException(400, "Could not decode image.")
+    return img
 
-    t0      = time.time()
+
+def _extract_image_from_json(payload: dict) -> bytes:
+    image_b64 = payload.get("image") or payload.get("image_base64") or payload.get("file")
+    if not image_b64:
+        raise HTTPException(400, "Provide an image file or JSON body with 'image'/'image_base64'.")
+
+    if not isinstance(image_b64, str):
+        raise HTTPException(400, "Image payload must be a base64 string.")
+
+    if "," in image_b64 and image_b64.strip().lower().startswith("data:image"):
+        image_b64 = image_b64.split(",", 1)[1]
+
+    try:
+        return base64.b64decode(image_b64)
+    except Exception:
+        raise HTTPException(400, "Invalid base64 image data.")
+
+
+def _run_detection(img):
+    # --- YOLO inference timing ---
+    inference_start = time.perf_counter()
     results = model(img, conf=BASE_CONF, verbose=False, imgsz=IMGSZ)[0]
-    elapsed = round(time.time() - t0, 3)
+    inference_end = time.perf_counter()
 
+    # --- Post-processing timing ---
+    post_start = time.perf_counter()
     detections = []
     for box in results.boxes:
         cls_id     = int(box.cls[0])
@@ -88,12 +107,79 @@ async def detect(file: UploadFile = File(...)):
 
     detections = apply_class_thresholds(detections, CLASS_THRESHOLDS, fallback=CONF)
     detections.sort(key=lambda d: d["confidence"], reverse=True)
-    return JSONResponse({
+    post_end = time.perf_counter()
+
+    # --- Response creation timing ---
+    response_start = time.perf_counter()
+    response = JSONResponse({
         "detections":   detections,
         "count":        len(detections),
-        "inference_ms": int(elapsed * 1000),
+        "inference_ms": int((inference_end - inference_start) * 1000),
         "top":          detections[0]["class"] if detections else None,
     })
+    response_end = time.perf_counter()
+
+    return (
+        response,
+        (inference_end - inference_start) * 1000,
+        (post_end - post_start) * 1000,
+        (response_end - response_start) * 1000,
+    )
+
+
+@app.post("/detect")
+async def detect(request: Request, file: UploadFile = File(None)):
+    request_start = time.perf_counter()
+    contents = None
+
+    file_read_start = time.perf_counter()
+    if file is not None:
+        if not file.content_type or not file.content_type.startswith("image/"):
+            raise HTTPException(400, "File must be an image.")
+        contents = await file.read()
+    else:
+        content_type = request.headers.get("content-type", "")
+        if "application/json" not in content_type:
+            raise HTTPException(400, "Send multipart form-data with 'file' or JSON with base64 image in 'image'.")
+        payload = await request.json()
+        contents = _extract_image_from_json(payload)
+    file_read_end = time.perf_counter()
+
+    decode_start = time.perf_counter()
+    img = _decode_image_bytes(contents)
+    decode_end = time.perf_counter()
+
+    preprocess_start = time.perf_counter()
+    # No additional preprocessing beyond decode in this endpoint,
+    # but we keep the timer separate for future visibility.
+    preprocess_end = time.perf_counter()
+
+    response, inference_ms, post_ms, response_ms = _run_detection(img)
+
+    request_end = time.perf_counter()
+
+    file_read_ms = (file_read_end - file_read_start) * 1000
+    decode_ms = (decode_end - decode_start) * 1000
+    preprocess_ms = (preprocess_end - preprocess_start) * 1000
+    total_ms = (request_end - request_start) * 1000
+
+    def pct(value_ms):
+        return (value_ms / total_ms * 100) if total_ms > 0 else 0.0
+
+    print("=" * 50)
+    print("PERFORMANCE BREAKDOWN")
+    print("=" * 50)
+    print(f"File Read Time:        {file_read_ms:7.2f} ms   ({pct(file_read_ms):5.1f}%)")
+    print(f"Image Decode Time:     {decode_ms:7.2f} ms   ({pct(decode_ms):5.1f}%)")
+    print(f"Preprocessing Time:    {preprocess_ms:7.2f} ms   ({pct(preprocess_ms):5.1f}%)")
+    print(f"YOLO Inference Time:   {inference_ms:7.2f} ms   ({pct(inference_ms):5.1f}%)")
+    print(f"Post Processing Time:  {post_ms:7.2f} ms   ({pct(post_ms):5.1f}%)")
+    print(f"Response Creation Time:{response_ms:7.2f} ms   ({pct(response_ms):5.1f}%)")
+    print("-" * 50)
+    print(f"Total Request Time:    {total_ms:7.2f} ms")
+    print("=" * 50)
+
+    return response
 
 
 @app.post("/feedback")
