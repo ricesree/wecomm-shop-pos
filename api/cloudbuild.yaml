@@ -1,7 +1,7 @@
 steps:
-  # Step 1 - Pull latest model from GCS
+  # Step 1 - Pull latest ONNX model from GCS
   - name: 'gcr.io/cloud-builders/gsutil'
-    args: ['cp', 'gs://vegdetect-pos-models/models/best_new.pt', './api/best_new.pt']
+    args: ['cp', 'gs://vegdetect-pos-models/models/best_14class_img640.onnx', './api/best_14class_img640.onnx']
 
   # Step 2 - Build Docker image
   - name: 'gcr.io/cloud-builders/docker'

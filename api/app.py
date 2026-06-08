@@ -24,7 +24,9 @@ def root(): return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 MODEL_PATH        = os.environ.get(
     "MODEL_PATH",
-    "/app/best_new.pt" if os.path.exists("/app/best_new.pt") else "best_new.pt"
+    "/app/best_14class_img640.onnx"
+    if os.path.exists("/app/best_14class_img640.onnx")
+    else "best_14class_img640.onnx"
 )
 CONF              = float(os.environ.get("CONF_THRESHOLD", "0.40"))
 IMGSZ             = int(os.environ.get("IMGSZ",            "640"))
