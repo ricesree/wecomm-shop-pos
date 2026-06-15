@@ -6,15 +6,21 @@ Local:  python app.py  → http://localhost:8080/docs
 
 import os
 import time
+from pathlib import Path
 from typing import List
 
 import cv2
 import numpy as np
 import uvicorn
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from inference import classify
+
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
 
 app = FastAPI(
     title="VeggieLens EfficientNet-B3 API",
@@ -44,6 +50,19 @@ class InferResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     model: str
+
+
+if STATIC_DIR.is_dir():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def camera_ui():
+    """Live camera UI — capture and classify via /api/infer."""
+    index = STATIC_DIR / "index.html"
+    if not index.is_file():
+        raise HTTPException(status_code=404, detail="UI not found")
+    return FileResponse(index)
 
 
 @app.get("/health", tags=["System"], summary="Health check", response_model=HealthResponse)

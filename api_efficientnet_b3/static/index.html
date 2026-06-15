@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VeggieLens — Camera Finder</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --accent: #3fb950;
+      --accent2: #58a6ff;
+      --warn: #f78166;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 700; }
+    header span { color: var(--muted); font-size: 0.85rem; }
+    .cam-row {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    select, button {
+      font: inherit;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+    }
+    button.primary {
+      background: var(--accent);
+      color: #0d1117;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.ghost:hover { border-color: var(--accent); }
+    main {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 20px;
+      padding: 20px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .card h2 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .video-wrap {
+      position: relative;
+      background: #000;
+      border-radius: var(--radius);
+      overflow: hidden;
+      aspect-ratio: 4/3;
+      border: 1px solid var(--border);
+    }
+    video, #snapshot {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    #snapshot { display: none; }
+    .video-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .timing {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .timing .ms {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .timing .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+    .result-idle {
+      padding: 40px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .top-match {
+      padding: 14px;
+      background: var(--bg);
+      border-radius: 10px;
+      border: 1px solid var(--accent);
+      margin-bottom: 12px;
+    }
+    .top-match .label { font-size: 1.35rem; font-weight: 700; color: var(--accent); }
+    .top-match .pct { font-size: 1rem; margin-top: 4px; }
+    .result-row {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-rank { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+    .result-label { font-weight: 600; margin: 4px 0; }
+    .bar-track {
+      height: 6px;
+      background: var(--bg);
+      border-radius: 99px;
+      overflow: hidden;
+      margin: 6px 0;
+    }
+    .bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      width: 0;
+      transition: width 0.5s ease;
+    }
+    .bar-fill.second { background: var(--accent2); }
+    .bar-fill.third { background: var(--muted); }
+    .meta { font-size: 0.72rem; color: var(--muted); display: flex; justify-content: space-between; }
+    .error { color: var(--warn); padding: 12px; }
+    .spinner {
+      width: 24px; height: 24px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>VeggieLens <span>EfficientNet-B3 · 27 classes</span></h1>
+    <div class="cam-row">
+      <label for="cameraSelect" style="color:var(--muted);font-size:0.8rem">Camera</label>
+      <select id="cameraSelect"></select>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div class="video-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <img id="snapshot" alt="capture">
+        <div id="placeholder" class="video-placeholder">Starting camera…</div>
+      </div>
+      <div class="actions">
+        <button type="button" class="primary" id="findBtn" disabled>Find</button>
+        <button type="button" class="ghost" id="clearBtn" disabled>Clear</button>
+      </div>
+      <p style="margin-top:10px;color:var(--muted);font-size:0.8rem">
+        Point at a vegetable or fruit, then press <strong>Find</strong> (or <kbd>Space</kbd>).
+      </p>
+    </section>
+
+    <aside>
+      <div class="card">
+        <h2>Detection time</h2>
+        <div class="timing">
+          <div class="ms" id="msVal">—</div>
+          <div class="lbl">inference (ms)</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2>Results</h2>
+        <div id="results">
+          <div class="result-idle">Press <strong>Find</strong> to classify</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <canvas id="canvas" class="hidden"></canvas>
+
+  <script>
+    const video = document.getElementById('video');
+    const snapshot = document.getElementById('snapshot');
+    const placeholder = document.getElementById('placeholder');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const findBtn = document.getElementById('findBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const resultsEl = document.getElementById('results');
+    const msVal = document.getElementById('msVal');
+    const canvas = document.getElementById('canvas');
+    let stream = null;
+    let busy = false;
+
+    async function loadCameras() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter(d => d.kind === 'videoinput');
+      cameraSelect.innerHTML = '';
+      cams.forEach((c, i) => {
+        const opt = document.createElement('option');
+        opt.value = c.deviceId;
+        opt.textContent = c.label || `Camera ${i + 1}`;
+        cameraSelect.appendChild(opt);
+      });
+      if (!cams.length) {
+        placeholder.textContent = 'No camera found';
+        return;
+      }
+      await startCamera(cams[0].deviceId);
+    }
+
+    async function startCamera(deviceId) {
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+      video.srcObject = stream;
+      video.classList.remove('hidden');
+      snapshot.classList.add('hidden');
+      placeholder.classList.add('hidden');
+      findBtn.disabled = false;
+      clearBtn.disabled = false;
+    }
+
+    cameraSelect.addEventListener('change', () => startCamera(cameraSelect.value));
+
+    function captureBlob() {
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+      return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+    }
+
+    async function find() {
+      if (busy || !stream) return;
+      busy = true;
+      findBtn.disabled = true;
+      resultsEl.innerHTML = '<div class="spinner"></div>';
+      try {
+        const blob = await captureBlob();
+        const fd = new FormData();
+        fd.append('file', blob, 'capture.jpg');
+        const res = await fetch('/api/infer', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Request failed');
+
+        snapshot.src = canvas.toDataURL('image/jpeg', 0.92);
+        snapshot.classList.remove('hidden');
+        video.classList.add('hidden');
+
+        msVal.textContent = data.inference_time_ms.toFixed(1);
+        renderResults(data.predictions);
+      } catch (e) {
+        resultsEl.innerHTML = `<div class="error">${e.message}</div>`;
+        msVal.textContent = '—';
+      }
+      busy = false;
+      findBtn.disabled = false;
+    }
+
+    function renderResults(predictions) {
+      if (!predictions?.length) {
+        resultsEl.innerHTML = '<div class="result-idle">No predictions</div>';
+        return;
+      }
+      const top = predictions[0];
+      const topPct = (top.prob * 100).toFixed(1);
+      let html = `
+        <div class="top-match">
+          <div class="result-rank">Top match</div>
+          <div class="label">${top.label}</div>
+          <div class="pct">${topPct}% confidence</div>
+        </div>`;
+      const ranks = ['#2', '#3'];
+      const barClass = ['second', 'third'];
+      predictions.slice(1).forEach((r, i) => {
+        const pct = (r.prob * 100).toFixed(1);
+        html += `
+          <div class="result-row">
+            <div class="result-rank">${ranks[i] || '#' + (i + 2)}</div>
+            <div class="result-label">${r.label}</div>
+            <div class="bar-track"><div class="bar-fill ${barClass[i] || ''}" style="width:${pct}%"></div></div>
+            <div class="meta"><span>threshold ${(r.threshold * 100).toFixed(0)}%</span><span>${pct}%</span></div>
+          </div>`;
+      });
+      resultsEl.innerHTML = html;
+    }
+
+    function clearAll() {
+      msVal.textContent = '—';
+      resultsEl.innerHTML = '<div class="result-idle">Press <strong>Find</strong> to classify</div>';
+      snapshot.classList.add('hidden');
+      video.classList.remove('hidden');
+    }
+
+    findBtn.addEventListener('click', find);
+    clearBtn.addEventListener('click', clearAll);
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space' && !busy) {
+        e.preventDefault();
+        find();
+      }
+    });
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(s => { s.getTracks().forEach(t => t.stop()); return loadCameras(); })
+      .catch(() => { placeholder.textContent = 'Camera permission denied'; });
+  </script>
+</body>
+</html>

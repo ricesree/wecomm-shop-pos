@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Upload both: efficientnet_b3.onnx + efficientnet_b3.onnx.data
 COPY app.py inference.py class_thresholds.csv ./
 COPY efficientnet_b3.onnx efficientnet_b3.onnx.data ./
+COPY static/ ./static/
 COPY VeggieLens_API.postman_collection.json ./
 
 ENV ONNX_PATH=/app/efficientnet_b3.onnx
