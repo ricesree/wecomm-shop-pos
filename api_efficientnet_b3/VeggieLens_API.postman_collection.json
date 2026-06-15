@@ -1,0 +1,98 @@
+{
+  "info": {
+    "_postman_id": "veggielens-api-collection",
+    "name": "VeggieLens API",
+    "description": "VeggieLens EfficientNet-B3 API.\n\nSet `baseUrl` to your Cloud Run URL or `http://localhost:8080` for local runs.\n\nSwagger UI: {{baseUrl}}/docs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "Verify the API server is running and the model is loaded."
+          },
+          "response": [
+            {
+              "name": "OK",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ok\",\n  \"model\": \"efficientnet_b3.onnx\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Inference",
+      "item": [
+        {
+          "name": "Classify Image (Infer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "description": "Vegetable/fruit image (JPEG, PNG, etc.)",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/infer",
+            "description": "Upload an image file. Returns top-3 predictions with confidence and per-class thresholds.\n\n**Form field:** `file` (required) — image binary"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"inference_time_ms\": 42.5,\n  \"predictions\": [\n    {\n      \"label\": \"Tomato\",\n      \"prob\": 0.94,\n      \"threshold\": 0.5\n    },\n    {\n      \"label\": \"Bell Pepper\",\n      \"prob\": 0.03,\n      \"threshold\": 0.5\n    },\n    {\n      \"label\": \"Apple\",\n      \"prob\": 0.01,\n      \"threshold\": 0.5\n    }\n  ]\n}"
+            },
+            {
+              "name": "Invalid Image",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Invalid image\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

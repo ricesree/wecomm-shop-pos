@@ -1,0 +1,39 @@
+steps:
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args:
+      - cp
+      - gs://vegdetect-pos-models/models/efficientnet_b3.onnx
+      - ./api_efficientnet_b3/efficientnet_b3.onnx
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-efficientnet-b3:latest
+      - ./api_efficientnet_b3
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-efficientnet-b3:latest
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      - gcloud
+      - run
+      - deploy
+      - vegdetect-efficientnet-b3
+      - --image=us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-efficientnet-b3:latest
+      - --region=us-central1
+      - --platform=managed
+      - --allow-unauthenticated
+      - --memory=2Gi
+      - --cpu=2
+      - --min-instances=0
+      - --max-instances=10
+
+images:
+  - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-efficientnet-b3:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY

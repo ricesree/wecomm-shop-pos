@@ -1,0 +1,7 @@
+*.onnx
+*.pt
+*.pth
+__pycache__/
+*.pyc
+.env
+.venv/
