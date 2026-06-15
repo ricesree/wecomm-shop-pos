@@ -9,23 +9,24 @@ steps:
     args:
       - build
       - -t
-      - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-efficientnet-b3:latest
+      - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-api:latest
       - ./api_efficientnet_b3
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - push
-      - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-efficientnet-b3:latest
+      - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-api:latest
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
       - gcloud
       - run
       - deploy
-      - vegdetect-efficientnet-b3
-      - --image=us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-efficientnet-b3:latest
+      - vegdetect-api
+      - --image=us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-api:latest
       - --region=us-central1
       - --platform=managed
+      - --project=wezard-similarity-score
       - --allow-unauthenticated
       - --memory=2Gi
       - --cpu=2
@@ -33,7 +34,7 @@ steps:
       - --max-instances=10
 
 images:
-  - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-efficientnet-b3:latest
+  - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-api:latest
 
 options:
   logging: CLOUD_LOGGING_ONLY
