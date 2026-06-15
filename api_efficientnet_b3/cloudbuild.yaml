@@ -5,6 +5,12 @@ steps:
       - gs://vegdetect-pos-models/models/efficientnet_b3.onnx
       - ./api_efficientnet_b3/efficientnet_b3.onnx
 
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args:
+      - cp
+      - gs://vegdetect-pos-models/models/efficientnet_b3.onnx.data
+      - ./api_efficientnet_b3/efficientnet_b3.onnx.data
+
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - build
