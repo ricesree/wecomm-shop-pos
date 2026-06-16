@@ -177,6 +177,40 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .hidden { display: none !important; }
+    .feedback-card { margin-top: 16px; }
+    .feedback-actions { display: flex; flex-direction: column; gap: 8px; }
+    .feedback-actions button.confirm { background: #238636; border-color: #238636; color: #fff; font-weight: 600; }
+    .feedback-actions button.correct { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+    .feedback-actions button.new-prod { background: #8957e5; border-color: #8957e5; color: #fff; }
+    .feedback-panel {
+      margin-top: 10px; padding: 10px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 10px;
+    }
+    .feedback-panel label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; }
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-wrap input {
+      width: 100%; padding: 8px 10px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    .suggestions {
+      position: absolute; left: 0; right: 0; top: 100%; z-index: 10;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; margin-top: 4px; max-height: 160px; overflow-y: auto;
+    }
+    .suggestions div {
+      padding: 8px 10px; cursor: pointer; font-size: 0.85rem;
+    }
+    .suggestions div:hover, .suggestions div.active { background: var(--bg); color: var(--accent); }
+    .panel-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--surface); border: 1px solid var(--accent);
+      color: var(--text); padding: 10px 18px; border-radius: 10px;
+      font-size: 0.85rem; z-index: 100; opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .feedback-hint { font-size: 0.75rem; color: var(--muted); margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -219,8 +253,41 @@
           <div class="result-idle">Press <strong>Find</strong> to classify</div>
         </div>
       </div>
+      <div class="card feedback-card" id="feedbackCard" style="display:none">
+        <h2>Feedback</h2>
+        <p class="feedback-hint" id="feedbackHint">Save this capture to GCS for retraining.</p>
+        <div class="feedback-actions">
+          <button type="button" class="confirm" id="confirmBtn">Confirm prediction</button>
+          <button type="button" class="correct" id="showCorrectBtn">Correct</button>
+          <button type="button" class="new-prod" id="showNewBtn">New produce</button>
+        </div>
+        <div class="feedback-panel hidden" id="correctPanel">
+          <label for="correctInput">Correct produce name</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="correctInput" placeholder="e.g. tomato" autocomplete="off">
+            <div class="suggestions hidden" id="correctSuggestions"></div>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="primary" id="correctSubmitBtn">Save correction</button>
+            <button type="button" class="ghost" id="correctCancelBtn">Cancel</button>
+          </div>
+        </div>
+        <div class="feedback-panel hidden" id="newPanel">
+          <label for="newInput">New produce name</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="newInput" placeholder="e.g. dragon_fruit" autocomplete="off">
+            <div class="suggestions hidden" id="newSuggestions"></div>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="primary" id="newSubmitBtn">Save new produce</button>
+            <button type="button" class="ghost" id="newCancelBtn">Cancel</button>
+          </div>
+        </div>
+      </div>
     </aside>
   </main>
+
+  <div class="toast" id="toast"></div>
 
   <canvas id="canvas" class="hidden"></canvas>
 
@@ -234,8 +301,140 @@
     const resultsEl = document.getElementById('results');
     const msVal = document.getElementById('msVal');
     const canvas = document.getElementById('canvas');
+    const feedbackCard = document.getElementById('feedbackCard');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const showCorrectBtn = document.getElementById('showCorrectBtn');
+    const showNewBtn = document.getElementById('showNewBtn');
+    const correctPanel = document.getElementById('correctPanel');
+    const newPanel = document.getElementById('newPanel');
+    const correctInput = document.getElementById('correctInput');
+    const newInput = document.getElementById('newInput');
+    const correctSuggestions = document.getElementById('correctSuggestions');
+    const newSuggestions = document.getElementById('newSuggestions');
+    const toast = document.getElementById('toast');
     let stream = null;
     let busy = false;
+    let lastBlob = null;
+    let lastTopLabel = null;
+    let produceList = [];
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    function normalizeHint(name) {
+      return name.trim().toLowerCase().replace(/\s+/g, '_');
+    }
+
+    async function loadProduceList() {
+      try {
+        const res = await fetch('/produce-list');
+        const data = await res.json();
+        produceList = data.produce || [];
+      } catch (_) {
+        produceList = [];
+      }
+    }
+
+    function filterSuggestions(query) {
+      const q = normalizeHint(query);
+      if (!q) return produceList.slice(0, 15);
+      return produceList.filter(p => p.includes(q)).slice(0, 15);
+    }
+
+    function bindAutocomplete(input, listEl) {
+      input.addEventListener('input', () => {
+        const items = filterSuggestions(input.value);
+        listEl.innerHTML = '';
+        if (!items.length || !input.value.trim()) {
+          listEl.classList.add('hidden');
+          return;
+        }
+        items.forEach(name => {
+          const div = document.createElement('div');
+          div.textContent = name;
+          div.onclick = () => {
+            input.value = name;
+            listEl.classList.add('hidden');
+          };
+          listEl.appendChild(div);
+        });
+        listEl.classList.remove('hidden');
+      });
+      input.addEventListener('blur', () => setTimeout(() => listEl.classList.add('hidden'), 150));
+    }
+
+    bindAutocomplete(correctInput, correctSuggestions);
+    bindAutocomplete(newInput, newSuggestions);
+
+    function hideFeedbackPanels() {
+      correctPanel.classList.add('hidden');
+      newPanel.classList.add('hidden');
+    }
+
+    function resetFeedback() {
+      lastBlob = null;
+      lastTopLabel = null;
+      feedbackCard.style.display = 'none';
+      hideFeedbackPanels();
+      correctInput.value = '';
+      newInput.value = '';
+    }
+
+    async function postFeedback(endpoint, fieldName, labelValue) {
+      if (!lastBlob) {
+        showToast('Capture an image first (press Find)');
+        return;
+      }
+      const fd = new FormData();
+      fd.append('image', lastBlob, 'capture.jpg');
+      if (endpoint === '/confirm') fd.append('label', labelValue);
+      if (endpoint === '/correct') fd.append('correct_label', labelValue);
+      if (endpoint === '/new-produce') fd.append('produce_name', labelValue);
+      try {
+        const res = await fetch(endpoint, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Upload failed');
+        showToast(`Saved to ${data.path}`);
+        hideFeedbackPanels();
+        const norm = normalizeHint(labelValue);
+        if (!produceList.includes(norm)) {
+          produceList.push(norm);
+          produceList.sort();
+        }
+      } catch (e) {
+        showToast(e.message);
+      }
+    }
+
+    confirmBtn.addEventListener('click', () => {
+      if (!lastTopLabel) return;
+      postFeedback('/confirm', 'label', lastTopLabel);
+    });
+    showCorrectBtn.addEventListener('click', () => {
+      newPanel.classList.add('hidden');
+      correctPanel.classList.remove('hidden');
+      correctInput.focus();
+    });
+    showNewBtn.addEventListener('click', () => {
+      correctPanel.classList.add('hidden');
+      newPanel.classList.remove('hidden');
+      newInput.focus();
+    });
+    document.getElementById('correctCancelBtn').addEventListener('click', hideFeedbackPanels);
+    document.getElementById('newCancelBtn').addEventListener('click', hideFeedbackPanels);
+    document.getElementById('correctSubmitBtn').addEventListener('click', () => {
+      const v = correctInput.value.trim();
+      if (!v) { showToast('Enter correct produce name'); return; }
+      postFeedback('/correct', 'correct_label', v);
+    });
+    document.getElementById('newSubmitBtn').addEventListener('click', () => {
+      const v = newInput.value.trim();
+      if (!v) { showToast('Enter new produce name'); return; }
+      postFeedback('/new-produce', 'produce_name', v);
+    });
 
     async function loadCameras() {
       const devices = await navigator.mediaDevices.enumerateDevices();
@@ -286,6 +485,7 @@
       resultsEl.innerHTML = '<div class="spinner"></div>';
       try {
         const blob = await captureBlob();
+        lastBlob = blob;
         const fd = new FormData();
         fd.append('file', blob, 'capture.jpg');
         const res = await fetch('/api/infer', { method: 'POST', body: fd });
@@ -297,6 +497,11 @@
         video.classList.add('hidden');
 
         msVal.textContent = data.inference_time_ms.toFixed(1);
+        lastTopLabel = data.predictions[0]?.label || null;
+        feedbackCard.style.display = 'block';
+        hideFeedbackPanels();
+        document.getElementById('feedbackHint').textContent =
+          lastTopLabel ? `Top prediction: ${lastTopLabel} — confirm or correct.` : 'Save this capture to GCS.';
         renderResults(data.predictions);
       } catch (e) {
         resultsEl.innerHTML = `<div class="error">${e.message}</div>`;
@@ -339,7 +544,10 @@
       resultsEl.innerHTML = '<div class="result-idle">Press <strong>Find</strong> to classify</div>';
       snapshot.classList.add('hidden');
       video.classList.remove('hidden');
+      resetFeedback();
     }
+
+    loadProduceList();
 
     findBtn.addEventListener('click', find);
     clearBtn.addEventListener('click', clearAll);

@@ -5,3 +5,4 @@ opencv-python-headless
 onnxruntime
 numpy
 Pillow
+google-cloud-storage
