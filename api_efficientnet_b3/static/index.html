@@ -469,12 +469,30 @@
 
     cameraSelect.addEventListener('change', () => startCamera(cameraSelect.value));
 
+    /** Capture only the visible frame (same crop as object-fit: cover in the UI). */
+    function captureVisibleFrame() {
+      const displayW = video.clientWidth;
+      const displayH = video.clientHeight;
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!displayW || !displayH || !vw || !vh) return null;
+
+      const scale = Math.max(displayW / vw, displayH / vh);
+      const srcW = displayW / scale;
+      const srcH = displayH / scale;
+      const srcX = (vw - srcW) / 2;
+      const srcY = (vh - srcH) / 2;
+
+      canvas.width = displayW;
+      canvas.height = displayH;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, displayW, displayH);
+      return { displayW, displayH };
+    }
+
     function captureBlob() {
-      const w = video.videoWidth;
-      const h = video.videoHeight;
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+      const drawn = captureVisibleFrame();
+      if (!drawn) return Promise.resolve(null);
       return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
     }
 
@@ -485,6 +503,7 @@
       resultsEl.innerHTML = '<div class="spinner"></div>';
       try {
         const blob = await captureBlob();
+        if (!blob) throw new Error('Could not capture frame');
         lastBlob = blob;
         const fd = new FormData();
         fd.append('file', blob, 'capture.jpg');
