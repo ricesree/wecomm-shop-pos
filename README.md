@@ -1,60 +1,49 @@
 # EfficientNet-B3 Branch (`efficientnetb3-model`)
 
-This branch contains **only** the EfficientNet-B3 classification API for Google Cloud Run.
+Standalone EfficientNet-B3 produce classifier API for Google Cloud Run (32 classes).
 
-It does **not** include the YOLO POS system, training scripts, or datasets from the `main` branch.
-
-## Branch layout
+## Layout
 
 ```
-api_efficientnet_b3/     ← Cloud Run service (FastAPI + ONNX)
-  app.py
-  inference.py
-  Dockerfile
-  cloudbuild.yaml
-  class_thresholds.csv
-  VeggieLens_API.postman_collection.json
-  models/README.md       ← how to upload .onnx to GCS
+api_efficientnet_b3/   Cloud Run service (FastAPI + ONNX via GCS)
+train.py               Local training pipeline
+deploy_cloud_run.ps1   Upload model to GCS + Cloud Build deploy
+pull_gcs_feedback.py   Download live feedback from GCS
+merge_dataset.py       Merge feedback into dataset_overall/
+split_dataset.py       Create train/val/test splits
 ```
 
-## Main branch vs this branch
+**Do not commit** `.onnx`, `.pth`, datasets, or `results_new/` model binaries.
 
-| | `main` branch | `efficientnetb3-model` branch |
-|---|---------------|-------------------------------|
-| Purpose | Live POS with camera + YOLO detection | Image upload API with EfficientNet-B3 |
-| API folder | `api/` | `api_efficientnet_b3/` |
-| Model | YOLO `best_new.pt` | EfficientNet-B3 `efficientnet_b3.onnx` |
-| Classes | 14 detection categories | 27 classification classes |
-| Cloud Run service | `vegdetect-api` | `vegdetect-efficientnet-b3` |
+## Model upload (before deploy)
 
-## Model storage (important)
-
-**Do not commit `.onnx` or `.pt` files to Git.**
-
-Upload the ONNX model to GCS:
-
-```bash
-gsutil cp efficientnet_b3.onnx gs://vegdetect-pos-models/models/efficientnet_b3.onnx
+```powershell
+gsutil cp results_new\efficientnet_b3.onnx gs://vegdetect-pos-models/models/efficientnet_b3.onnx
+gsutil cp api_efficientnet_b3\class_thresholds.csv gs://vegdetect-pos-models/models/class_thresholds.csv
 ```
-
-Cloud Build pulls the model from GCS during deployment.
 
 ## Deploy
 
-```bash
-gcloud builds submit --config=api_efficientnet_b3/cloudbuild.yaml .
+```powershell
+gcloud auth login
+.\deploy_cloud_run.ps1
 ```
 
-## API endpoints (after deploy)
+Service: `vegdetect-api` · Region: `us-central1` · Project: `wezard-similarity-score`
+
+## API
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/health` | Health check |
+| GET | `/` | Camera UI |
 | GET | `/docs` | Swagger UI |
-| POST | `/api/infer` | Upload image (`file` field) |
+| GET | `/health` | Health check |
+| POST | `/api/infer` | Classify image (`file` field) |
 
-## Postman
+## Training
 
-Import `api_efficientnet_b3/VeggieLens_API.postman_collection.json` and set `baseUrl` to your Cloud Run URL.
+```powershell
+python train.py
+```
 
-More detail: `api_efficientnet_b3/README.md`
+Outputs go to `results_new/` (metrics, ONNX, thresholds). Then upload ONNX to GCS and redeploy.

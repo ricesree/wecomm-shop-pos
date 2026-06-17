@@ -1,7 +1,7 @@
 """
 EfficientNet-B3 vegetable classifier API + GCS feedback collection.
 
-Local:  python app.py  → http://localhost:8080
+Local:  python app.py  -> http://localhost:8080
 """
 
 import os
@@ -35,10 +35,10 @@ STATIC_DIR = BASE_DIR / "static"
 app = FastAPI(
     title="VeggieLens EfficientNet-B3 API",
     description=(
-        "Camera UI, image classification, and GCS feedback collection "
+        "32-class produce classifier with camera UI, Swagger docs, and GCS feedback "
         "(confirmations / corrections / new produce)."
     ),
-    version="1.1.0",
+    version="1.2.0",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",

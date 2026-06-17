@@ -9,10 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Model files are placed here by Cloud Build (from GCS) before docker build.
-# Upload both: efficientnet_b3.onnx + efficientnet_b3.onnx.data
+# Model downloaded from GCS during Cloud Build (see cloudbuild.yaml).
 COPY app.py inference.py gcs_feedback.py class_thresholds.csv ./
-COPY efficientnet_b3.onnx efficientnet_b3.onnx.data ./
+COPY efficientnet_b3.onnx ./
 COPY static/ ./static/
 COPY VeggieLens_API.postman_collection.json ./
 
