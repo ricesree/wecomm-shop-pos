@@ -189,6 +189,80 @@ async def _images_from_multipart(request: Request) -> list[np.ndarray]:
     return images
 
 
+INFER_OPENAPI_EXTRA = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            "application/json": {
+                "schema": {
+                    "type": "object",
+                    "required": ["file"],
+                    "properties": {
+                        "file": {
+                            "title": "File",
+                            "description": (
+                                "Base64-encoded image, or up to 3 Base64 strings "
+                                "(weighing-scale screenshots). Raw Base64 or "
+                                "data:image/jpeg;base64,... URLs."
+                            ),
+                            "oneOf": [
+                                {"type": "string"},
+                                {
+                                    "type": "array",
+                                    "maxItems": 3,
+                                    "minItems": 1,
+                                    "items": {"type": "string"},
+                                },
+                            ],
+                        }
+                    },
+                },
+                "examples": {
+                    "single_base64": {
+                        "summary": "Single Base64 image",
+                        "description": "Replace with Base64 from a real produce photo.",
+                        "value": {"file": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBD..."},
+                    },
+                    "three_base64": {
+                        "summary": "Three scale screenshots",
+                        "value": {
+                            "file": [
+                                "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+                                "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+                                "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+                            ]
+                        },
+                    },
+                },
+            },
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "required": ["file"],
+                    "properties": {
+                        "file": {
+                            "type": "string",
+                            "format": "binary",
+                            "description": "Primary image (JPEG, PNG, etc.)",
+                        },
+                        "file2": {
+                            "type": "string",
+                            "format": "binary",
+                            "description": "Optional second image",
+                        },
+                        "file3": {
+                            "type": "string",
+                            "format": "binary",
+                            "description": "Optional third image",
+                        },
+                    },
+                },
+            },
+        },
+    }
+}
+
+
 @app.post(
     "/api/infer",
     tags=["Inference"],
@@ -198,6 +272,7 @@ async def _images_from_multipart(request: Request) -> list[np.ndarray]:
         400: {"description": "Invalid or unreadable image"},
         415: {"description": "Unsupported Content-Type"},
     },
+    openapi_extra=INFER_OPENAPI_EXTRA,
 )
 async def infer(request: Request):
     content_type = request.headers.get("content-type", "")
