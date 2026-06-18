@@ -1,3 +1,6 @@
+# Cloud Build trigger entry (vegdetect-deploy expects api/cloudbuild.yaml).
+# EfficientNet-B3 API — same pipeline as api_efficientnet_b3/cloudbuild.yaml
+
 steps:
   - name: 'gcr.io/cloud-builders/gsutil'
     args:
