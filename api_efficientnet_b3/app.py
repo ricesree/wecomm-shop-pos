@@ -13,7 +13,7 @@ from typing import List, Optional, Union
 import cv2
 import numpy as np
 import uvicorn
-from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import FastAPI, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
@@ -39,7 +39,7 @@ app = FastAPI(
         "32-class produce classifier with camera UI, Swagger docs, and GCS feedback "
         "(confirmations / corrections / new produce)."
     ),
-    version="1.3.0",
+    version="1.4.0",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
@@ -129,18 +129,20 @@ async def produce_list(q: Optional[str] = Query(None, description="Optional filt
     return ProduceListResponse(produce=all_names)
 
 
-def _decode_base64_image(data: str) -> np.ndarray:
+def _decode_base64_to_bytes(data: str) -> bytes:
     payload = data.strip()
     if payload.startswith("data:"):
         if "," not in payload:
             raise ValueError("Invalid data URL image")
         payload = payload.split(",", 1)[1]
-
     try:
-        raw = base64.b64decode(payload, validate=True)
+        return base64.b64decode(payload, validate=True)
     except Exception:
         raise ValueError("Invalid base64 image data")
 
+
+def _decode_base64_image(data: str) -> np.ndarray:
+    raw = _decode_base64_to_bytes(data)
     image = cv2.imdecode(np.frombuffer(raw, np.uint8), cv2.IMREAD_COLOR)
     if image is None:
         raise ValueError("Invalid image bytes")
@@ -299,13 +301,71 @@ async def infer(request: Request):
     )
 
 
-async def _read_image(image: UploadFile) -> tuple[bytes, Optional[str], Optional[str]]:
-    if not image.content_type or not image.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
+async def _read_image_upload(image: UploadFile) -> tuple[bytes, str, Optional[str]]:
     contents = await image.read()
     if not contents:
         raise HTTPException(status_code=400, detail="Empty image file")
-    return contents, image.content_type, image.filename
+
+    content_type = image.content_type or ""
+    if not content_type.startswith("image/"):
+        filename = (image.filename or "").lower()
+        if filename.endswith((".jpg", ".jpeg")):
+            content_type = "image/jpeg"
+        elif filename.endswith(".png"):
+            content_type = "image/png"
+        elif filename.endswith(".webp"):
+            content_type = "image/webp"
+        else:
+            content_type = "image/jpeg"
+
+    return contents, content_type, image.filename
+
+
+async def _parse_feedback_request(
+    request: Request,
+) -> tuple[dict, bytes, str, Optional[str]]:
+    content_type = request.headers.get("content-type", "")
+
+    if content_type.startswith("application/json"):
+        data = await request.json()
+        if not isinstance(data, dict):
+            raise HTTPException(status_code=400, detail="Invalid JSON body")
+        image_b64 = data.get("image")
+        if not image_b64:
+            raise HTTPException(status_code=400, detail="Missing image field")
+        try:
+            contents = _decode_base64_to_bytes(str(image_b64))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        if not contents:
+            raise HTTPException(status_code=400, detail="Empty image file")
+        return data, contents, "image/jpeg", "capture.jpg"
+
+    if content_type.startswith("multipart/form-data"):
+        form = await request.form()
+        data = {key: form.get(key) for key in form.keys()}
+        image = form.get("image")
+        if not isinstance(image, UploadFile):
+            raise HTTPException(status_code=400, detail="Missing image field")
+        contents, mime, filename = await _read_image_upload(image)
+        return data, contents, mime, filename
+
+    raise HTTPException(
+        status_code=415,
+        detail="Send JSON with base64 image field, or multipart form-data",
+    )
+
+
+def _form_field_value(data: dict, field: str) -> str:
+    value = data.get(field)
+    if value is None:
+        raise HTTPException(status_code=400, detail=f"Missing {field} field")
+    if hasattr(value, "filename"):
+        raise HTTPException(status_code=400, detail=f"Invalid {field} field")
+    text = str(value).strip()
+    if not text:
+        raise HTTPException(status_code=400, detail=f"Missing {field} field")
+    return text
 
 
 @app.post(
@@ -314,19 +374,18 @@ async def _read_image(image: UploadFile) -> tuple[bytes, Optional[str], Optional
     summary="Confirm prediction — save to confirmations/<label>/",
     response_model=FeedbackSaveResponse,
 )
-async def confirm_feedback(
-    image: UploadFile = File(...),
-    label: str = Form(...),
-):
+async def confirm_feedback(request: Request):
     try:
-        normalized = normalize_produce_name(label)
-        contents, content_type, filename = await _read_image(image)
+        data, contents, content_type, filename = await _parse_feedback_request(request)
+        normalized = normalize_produce_name(_form_field_value(data, "label"))
         path = upload_feedback_image(
             PREFIX_CONFIRM, normalized, contents, content_type, filename
         )
         return FeedbackSaveResponse(path=path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
 
@@ -337,19 +396,18 @@ async def confirm_feedback(
     summary="Correct prediction — save to corrections/<correct_label>/",
     response_model=FeedbackSaveResponse,
 )
-async def correct_feedback(
-    image: UploadFile = File(...),
-    correct_label: str = Form(...),
-):
+async def correct_feedback(request: Request):
     try:
-        normalized = normalize_produce_name(correct_label)
-        contents, content_type, filename = await _read_image(image)
+        data, contents, content_type, filename = await _parse_feedback_request(request)
+        normalized = normalize_produce_name(_form_field_value(data, "correct_label"))
         path = upload_feedback_image(
             PREFIX_CORRECT, normalized, contents, content_type, filename
         )
         return FeedbackSaveResponse(path=path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
 
@@ -360,19 +418,18 @@ async def correct_feedback(
     summary="New produce — save to new/<produce_name>/",
     response_model=FeedbackSaveResponse,
 )
-async def new_produce_feedback(
-    image: UploadFile = File(...),
-    produce_name: str = Form(...),
-):
+async def new_produce_feedback(request: Request):
     try:
-        normalized = normalize_produce_name(produce_name)
-        contents, content_type, filename = await _read_image(image)
+        data, contents, content_type, filename = await _parse_feedback_request(request)
+        normalized = normalize_produce_name(_form_field_value(data, "produce_name"))
         path = upload_feedback_image(
             PREFIX_NEW, normalized, contents, content_type, filename
         )
         return FeedbackSaveResponse(path=path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
 

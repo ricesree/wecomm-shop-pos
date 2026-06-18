@@ -215,7 +215,7 @@
 </head>
 <body>
   <header>
-    <h1>VeggieLens <span>EfficientNet-B3 · 27 classes</span></h1>
+    <h1>VeggieLens <span>EfficientNet-B3 · 32 classes</span></h1>
     <div class="cam-row">
       <label for="cameraSelect" style="color:var(--muted);font-size:0.8rem">Camera</label>
       <select id="cameraSelect"></select>
@@ -314,7 +314,7 @@
     const toast = document.getElementById('toast');
     let stream = null;
     let busy = false;
-    let lastBlob = null;
+    let lastCaptureBase64 = null;
     let lastTopLabel = null;
     let produceList = [];
 
@@ -375,7 +375,7 @@
     }
 
     function resetFeedback() {
-      lastBlob = null;
+      lastCaptureBase64 = null;
       lastTopLabel = null;
       feedbackCard.style.display = 'none';
       hideFeedbackPanels();
@@ -383,20 +383,27 @@
       newInput.value = '';
     }
 
-    async function postFeedback(endpoint, fieldName, labelValue) {
-      if (!lastBlob) {
+    async function postFeedback(endpoint, labelField, labelValue) {
+      if (!lastCaptureBase64) {
         showToast('Capture an image first (press Find)');
         return;
       }
-      const fd = new FormData();
-      fd.append('image', lastBlob, 'capture.jpg');
-      if (endpoint === '/confirm') fd.append('label', labelValue);
-      if (endpoint === '/correct') fd.append('correct_label', labelValue);
-      if (endpoint === '/new-produce') fd.append('produce_name', labelValue);
+      const body = { image: lastCaptureBase64 };
+      body[labelField] = labelValue;
       try {
-        const res = await fetch(endpoint, { method: 'POST', body: fd });
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Upload failed');
+        if (!res.ok) {
+          const detail = data.detail;
+          const msg = Array.isArray(detail)
+            ? detail.map(d => d.msg).join(', ')
+            : (detail || 'Upload failed');
+          throw new Error(msg);
+        }
         showToast(`Saved to ${data.path}`);
         hideFeedbackPanels();
         const norm = normalizeHint(labelValue);
@@ -490,10 +497,10 @@
       return { displayW, displayH };
     }
 
-    function captureBlob() {
+    function captureBase64() {
       const drawn = captureVisibleFrame();
-      if (!drawn) return Promise.resolve(null);
-      return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+      if (!drawn) return null;
+      return canvas.toDataURL('image/jpeg', 0.92);
     }
 
     async function find() {
@@ -502,16 +509,25 @@
       findBtn.disabled = true;
       resultsEl.innerHTML = '<div class="spinner"></div>';
       try {
-        const blob = await captureBlob();
-        if (!blob) throw new Error('Could not capture frame');
-        lastBlob = blob;
-        const fd = new FormData();
-        fd.append('file', blob, 'capture.jpg');
-        const res = await fetch('/api/infer', { method: 'POST', body: fd });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Request failed');
+        const dataUrl = captureBase64();
+        if (!dataUrl) throw new Error('Could not capture frame');
+        lastCaptureBase64 = dataUrl;
 
-        snapshot.src = canvas.toDataURL('image/jpeg', 0.92);
+        const res = await fetch('/api/infer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file: lastCaptureBase64 }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          const detail = data.detail;
+          const msg = Array.isArray(detail)
+            ? detail.map(d => d.msg).join(', ')
+            : (detail || 'Request failed');
+          throw new Error(msg);
+        }
+
+        snapshot.src = lastCaptureBase64;
         snapshot.classList.remove('hidden');
         video.classList.add('hidden');
 
