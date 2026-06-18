@@ -45,7 +45,58 @@
       "name": "Inference",
       "item": [
         {
-          "name": "Classify Image (Infer)",
+          "name": "Classify Image (Infer) — Base64 JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"file\": \"<base64-encoded-image>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/infer",
+            "description": "Send one or up to 3 Base64-encoded images in JSON.\n\n**Field:** `file` — a single Base64 string, or an array of up to 3 strings.\n\nSupports raw Base64 or data URLs (`data:image/jpeg;base64,...`).\n\n**Response** (unchanged): top-3 predictions with confidence and per-class thresholds."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"inference_time_ms\": 42.5,\n  \"predictions\": [\n    {\n      \"label\": \"Tomato\",\n      \"prob\": 0.94,\n      \"threshold\": 0.5\n    },\n    {\n      \"label\": \"Bell Pepper\",\n      \"prob\": 0.03,\n      \"threshold\": 0.5\n    },\n    {\n      \"label\": \"Apple\",\n      \"prob\": 0.01,\n      \"threshold\": 0.5\n    }\n  ]\n}"
+            },
+            {
+              "name": "Invalid Image",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Invalid image bytes\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Classify Image (Infer) — Multipart (legacy)",
           "request": {
             "method": "POST",
             "header": [],
@@ -61,7 +112,7 @@
               ]
             },
             "url": "{{baseUrl}}/api/infer",
-            "description": "Upload an image file. Returns top-3 predictions with confidence and per-class thresholds.\n\n**Form field:** `file` (required) — image binary"
+            "description": "Legacy multipart upload (still supported for the camera demo UI).\n\n**Form field:** `file` (required). Optional `file2`, `file3` for up to 3 images."
           },
           "response": [
             {

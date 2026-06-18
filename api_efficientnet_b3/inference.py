@@ -47,10 +47,7 @@ def softmax(x: np.ndarray) -> np.ndarray:
     return e / e.sum()
 
 
-def classify(frame_bgr: np.ndarray) -> list[dict]:
-    inp = preprocess(frame_bgr)
-    logits = session.run(None, {input_name: inp})[0][0]
-    probs = softmax(logits)
+def _top3_from_probs(probs: np.ndarray) -> list[dict]:
     top3_idx = probs.argsort()[::-1][:3]
     return [
         {
@@ -60,3 +57,24 @@ def classify(frame_bgr: np.ndarray) -> list[dict]:
         }
         for i in top3_idx
     ]
+
+
+def classify(frame_bgr: np.ndarray) -> list[dict]:
+    inp = preprocess(frame_bgr)
+    logits = session.run(None, {input_name: inp})[0][0]
+    return _top3_from_probs(softmax(logits))
+
+
+def classify_many(frames_bgr: list[np.ndarray]) -> list[dict]:
+    """Run inference on one or more images; average logits when multiple are sent."""
+    if not frames_bgr:
+        raise ValueError("At least one image is required")
+    if len(frames_bgr) == 1:
+        return classify(frames_bgr[0])
+
+    logits_list = []
+    for frame_bgr in frames_bgr:
+        inp = preprocess(frame_bgr)
+        logits_list.append(session.run(None, {input_name: inp})[0][0])
+    avg_logits = np.mean(logits_list, axis=0)
+    return _top3_from_probs(softmax(avg_logits))
