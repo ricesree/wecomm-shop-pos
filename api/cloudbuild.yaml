@@ -32,10 +32,13 @@ steps:
       - --cpu=4
       - --min-instances=1
       - --max-instances=10
-      - --set-env-vars=FEEDBACK_BUCKET=vegdetect-pos-models
+      - --set-env-vars=FEEDBACK_BUCKET=vegdetect-pos-models,API_TOKEN=${_API_TOKEN}
 
 images:
   - us-central1-docker.pkg.dev/wezard-similarity-score/cloud-run-source-deploy/vegdetect-api:latest
 
 options:
   logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _API_TOKEN: ''

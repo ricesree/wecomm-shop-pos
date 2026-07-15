@@ -8,7 +8,7 @@ GET  /health           — health check
 
 import os, io, json, time, cv2, numpy as np
 from datetime import datetime, timezone
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
+from fastapi import FastAPI, File, UploadFile, Form, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from ultralytics import YOLO
@@ -31,6 +31,7 @@ MODEL_PATH        = os.environ.get(
 CONF              = float(os.environ.get("CONF_THRESHOLD", "0.40"))
 IMGSZ             = int(os.environ.get("IMGSZ",            "640"))
 FEEDBACK_BUCKET   = os.environ.get("FEEDBACK_BUCKET",  "")
+API_TOKEN         = os.environ.get("API_TOKEN", "")
 THRESHOLDS_PATH   = os.environ.get(
     "THRESHOLDS_PATH",
     "/app/thresholds.json" if os.path.exists("/app/thresholds.json") else "thresholds.json"
@@ -52,6 +53,23 @@ def get_gcs():
     return _gcs_client
 
 
+def require_api_token(
+    x_api_key: str | None = Header(None),
+    authorization: str | None = Header(None),
+):
+    if not API_TOKEN:
+        raise HTTPException(503, "API token is not configured.")
+
+    token = x_api_key
+    if not token and authorization:
+        scheme, _, value = authorization.partition(" ")
+        if scheme.lower() == "bearer":
+            token = value.strip()
+
+    if token != API_TOKEN:
+        raise HTTPException(401, "Invalid or missing API token.")
+
+
 @app.get("/health")
 def health():
     return {
@@ -59,6 +77,8 @@ def health():
         "model":           MODEL_PATH,
         "classes":         list(model.names.values()),
         "conf_threshold":  CONF,
+        "auth":            "api_token",
+        "auth_configured": bool(API_TOKEN),
         "feedback_bucket": FEEDBACK_BUCKET or "not configured",
     }
 
@@ -130,7 +150,14 @@ def _run_detection(img):
 
 
 @app.post("/detect")
-async def detect(request: Request, file: UploadFile = File(None)):
+async def detect(
+    request: Request,
+    file: UploadFile = File(None),
+    x_api_key: str | None = Header(None),
+    authorization: str | None = Header(None),
+):
+    require_api_token(x_api_key=x_api_key, authorization=authorization)
+
     request_start = time.perf_counter()
     contents = None
 
