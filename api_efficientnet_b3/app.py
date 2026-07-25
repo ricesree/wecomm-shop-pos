@@ -109,6 +109,16 @@ async def camera_ui():
 
 @app.get("/health", tags=["System"], summary="Health check", response_model=HealthResponse)
 async def health():
+    # Do not load the ONNX model here — Cloud Run startup probes would time out.
+    # Only verify model artifacts are present in the image.
+    from inference import ONNX_PATH, THRESHOLD_PATH
+
+    if not Path(ONNX_PATH).is_file():
+        raise HTTPException(status_code=503, detail=f"Model file missing: {ONNX_PATH}")
+    if not Path(THRESHOLD_PATH).is_file():
+        raise HTTPException(
+            status_code=503, detail=f"Thresholds file missing: {THRESHOLD_PATH}"
+        )
     return HealthResponse(
         status="ok",
         model="efficientnet_b3.onnx",
@@ -432,6 +442,34 @@ async def new_produce_feedback(request: Request):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
+
+
+@app.post("/quick-test", tags=["Debug"], summary="Quick inference test with any image")
+async def quick_test(file: UploadFile):
+    """Upload any image to verify inference without JWT/UI."""
+    try:
+        contents = await file.read()
+        if not contents:
+            raise ValueError("Empty file")
+
+        frame = cv2.imdecode(np.frombuffer(contents, np.uint8), cv2.IMREAD_COLOR)
+        if frame is None:
+            raise ValueError("Invalid image format")
+
+        results = classify_many([frame])
+        return {
+            "status": "success",
+            "filename": file.filename,
+            "image_shape": list(frame.shape),
+            "predictions": results,
+            "top_class": results[0]["label"],
+            "confidence": results[0]["prob"],
+            "passed_threshold": results[0]["prob"] >= results[0]["threshold"],
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
 
 
 if __name__ == "__main__":
